@@ -91,10 +91,10 @@ class SlackApp(object):
 
     def handle_block_actions(self, payload, rqst):
         action = payload['actions'][0]
-        return self.on_block_actions(action, payload=payload, rqst=rqst)
+        return self.on_block_actions(action=action, payload=payload, rqst=rqst)
 
     def handle_dialog_submit(self, payload, rqst):
-        return self.on_dialog_submit(payload, submit=payload['submission'], rqst=rqst)
+        return self.on_dialog_submit(payload=payload, submit=payload['submission'], rqst=rqst)
 
     def handle_request(self, form_data):
         rqst = self.request(form_data)
