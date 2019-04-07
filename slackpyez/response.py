@@ -40,6 +40,14 @@ class SlackResponse(dict):
             **kwargs}
 
     @staticmethod
+    def e_image(image_url, alt_text):
+        return {
+            'type': 'image',
+            'image_url': image_url,
+            'alt_text': alt_text
+        }
+
+    @staticmethod
     def e_static_select(placeholder, action_id, options=None, option_groups=None, **kwargs):
         ele = {
             'type': 'static_select',

@@ -19,6 +19,7 @@ class SlackRequest(object):
 
         self.response_url = self.form.get('response_url') or self.payload.get('response_url')
         self.trigger_id = self.form.get('trigger_id') or self.payload.get('trigger_id')
+        self.state = json.loads(self.payload.get('state') or '{}')
 
         oauth_token = app.config.channels[self.channel]['oauth_token']
         self.client = SlackClient(token=oauth_token)

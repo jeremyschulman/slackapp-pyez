@@ -1,5 +1,6 @@
 import json
 
+
 class SlackDialog(dict):
 
     def __init__(self, rqst, callback_id, on_submit, **_kwargs):
@@ -9,7 +10,7 @@ class SlackDialog(dict):
         self.callback_id = callback_id
         self._on_submit_func = None
         self.on_submit = on_submit
-        self.state = json.loads(rqst.payload.get('state') or '{}')
+        self['state'] = rqst.state
         self.trigger_id = rqst.trigger_id
 
     @property
@@ -42,8 +43,8 @@ class SlackDialog(dict):
 
     def send(self, **kwargs):
 
+        self['state'] = json.dumps(self['state'])
         dialog = dict(callback_id=self.callback_id, **self, **kwargs)
-        dialog['state'] = json.dumps(self.state)
 
         resp = self.client.api_call(
             "dialog.open", trigger_id=self.trigger_id, dialog=dialog)
