@@ -13,12 +13,13 @@ def slackcmd_verify_ngrok():
 
     resp['blocks'] = [
         resp.b_section('Hi There!'),
+        resp.b_section(f'You are <@{rqst.user_id}>'),
         resp.b_divider(),
         resp.b_actions(block_id='ngrok', elements=[
             resp.e_button('Good'),
             resp.e_button('Bad')
         ]),
-        resp.b_section(f'You are <@{rqst.user_id}>')
+        resp.b_divider()
     ]
 
     resp.send(_on_actions=[

@@ -50,10 +50,6 @@ class SlackApp(object):
         self.on_dialog_submit = CallbackHandler('callback_id')
         self.on_payload_type = CallbackHandler('type')
 
-        # self.handler_for_type = dict(
-        #     block_actions=self.on_block_actions,
-        #     dialog_submission=self.on_dialog_submit)
-
         self.config = SlackAppConfig()
 
         # setup the default handler functions
@@ -69,16 +65,19 @@ class SlackApp(object):
         return SlackRequest(app=self, form_data=rqst_form)
 
     @staticmethod
-    def validate_api_response(response_json, api_method):
-        if not response_json.get("ok"):
-            print(f"An error occurred while executing {api_method}")
-            meta = response_json.get("response_metadata") or {}
-            meta_msgs = meta.get("messages")
-            if meta_msgs:
-                for message in meta_msgs:
-                    print(f"Response Metadata Message: {message}")
+    def validate_api_response(api_resp):
+        if api_resp.get("ok"):
+            return
 
-            print(f"Full json response: {response_json}")
+        print("API failed, messages: ")
+        meta = api_resp.get("response_metadata") or {}
+        meta_msgs = meta.get("messages")
+        if meta_msgs:
+            for message in meta_msgs:
+                print(f">: {message}")
+
+        raise RuntimeError(f"Slack API failed.\n{json.dumps(api_resp, indent=3)}\n",
+                           api_resp)
 
     # -------------------------------------------------------------------------
     # request handlers
