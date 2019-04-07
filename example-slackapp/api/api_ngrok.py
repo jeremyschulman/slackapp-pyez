@@ -8,7 +8,6 @@ from slackapp import slackapp
 def slackcmd_verify_ngrok():
 
     rqst = slackapp.request(request.form)
-
     resp = rqst.response()
 
     resp['blocks'] = [
@@ -22,10 +21,8 @@ def slackcmd_verify_ngrok():
         resp.b_divider()
     ]
 
-    resp.send(_on_actions=[
-        (('ngrok', 'Good'), _on_button),
-        (('ngrok', 'Bad'), _on_button)
-    ])
+    resp.send(_on_actions=[(('ngrok', 'Good'), _on_button),
+                           (('ngrok', 'Bad'), _on_button)])
 
     return ""
 
