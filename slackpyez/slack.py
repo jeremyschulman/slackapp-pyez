@@ -57,9 +57,15 @@ class SlackApp(object):
         self.on_payload_type['block_actions'] = self.handle_block_actions
         self.on_payload_type['dialog_submission'] = self.handle_dialog_submit
 
-    def register_block_actions(self, on_defs):
-        for key_val, func in on_defs:
-            self.on_block_actions[key_val] = func
+    # def register_block_actions(self, on_defs):
+    #     for key_val, func in on_defs:
+    #         self.on_block_actions[key_val] = func
+
+    def register_block_action(self, key, func):
+        self.on_block_actions[key] = func
+
+    def register_dialog_submit(self, callback_id, func):
+        self.on_dialog_submit[callback_id] = func
 
     def request(self, rqst_form):
         return SlackRequest(app=self, form_data=rqst_form)

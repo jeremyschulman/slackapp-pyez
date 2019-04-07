@@ -77,8 +77,8 @@ class SlackRequest(object):
     #         **kwargs
     #     }
 
-    def dialog(self, callback_id):
-        return SlackDialog(rqst=self, callback_id=callback_id)
+    def dialog(self, **kwargs):
+        return SlackDialog(rqst=self, **kwargs)
 
     def response(self):
         return SlackResponse(rqst=self)
