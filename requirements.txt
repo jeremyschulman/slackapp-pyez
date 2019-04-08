@@ -1,4 +1,4 @@
-flask
 slackclient
 slackeventsapi
 request
+toml

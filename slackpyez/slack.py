@@ -1,8 +1,6 @@
 import os
 import json
 from pathlib import Path
-
-from flask import request, jsonify
 import toml
 
 from slackpyez.callback_handler import CallbackHandler
@@ -105,5 +103,4 @@ class SlackApp(object):
         # self.log.info("PAYLOAD>> {}\n".format(json.dumps(rqst.payload, indent=3)))
 
         callback = self.on_payload_type.callback_for(rqst.payload)
-        rv = callback(rqst)
-        return jsonify(rv) if rv else ""
+        return callback(rqst)

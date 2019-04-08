@@ -30,13 +30,3 @@ class CallbackHandler(dict):
             raise ValueError(f'Attempting to use key-value {key_val}, no registered handler')
 
         return callback
-
-    # def __call__(self, key_item, **kwargs):
-    #     key_val = self._get_key(key_item)
-    #     callback = self.get(key_val)
-    #
-    #     if not callback:
-    #         raise ValueError('Attempting to use key-value {}, no registered handler'.format(
-    #             key_val))
-    #
-    #     return callback(**kwargs)
