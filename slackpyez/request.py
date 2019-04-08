@@ -5,9 +5,6 @@ from slackclient import SlackClient
 
 from slackpyez.response import SlackResponse
 
-class SlackEvent(object):
-    pass
-
 
 class SlackRequest(object):
 
@@ -16,7 +13,11 @@ class SlackRequest(object):
         self.rqst_data = rqst_data
 
         if 'event' in self.rqst_data:
-            pass
+            self.event = self.rqst_data['event']
+            self.user_id = self.event['user']
+            self.channel = self.event['channel']
+            self.text = self.event['text']
+            self.ts = self.event['ts']
 
         elif 'payload' in self.rqst_data:
             self.payload = json.loads(rqst_data['payload'])
@@ -36,9 +37,15 @@ class SlackRequest(object):
         else:
             raise RuntimeError("What is this request?")
 
-        oauth_token = app.config.channels[self.channel]['oauth_token']
-        self.client = SlackClient(token=oauth_token)
+        chan_config = app.config.channels[self.channel]
+        if 'botuser_oauth_token' in chan_config:
+            self.bot = True
+            token = chan_config['botuser_oauth_token']
+        else:
+            self.bot = False
+            token = chan_config['oauth_token']
 
+        self.client = SlackClient(token=token)
         self.request = Session()
         self.request.headers["Content-Type"] = "application/json"
         self.request.verify = False

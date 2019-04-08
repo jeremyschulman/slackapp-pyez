@@ -6,6 +6,7 @@ class SlackResponse(dict):
         self.app = rqst.app
         self.rqst = rqst
         self.client = rqst.client
+        self['as_user'] = self.rqst.bot
 
     # -------------------------------------------------------------------------
     # b_<item> - build blocks for slack messaging

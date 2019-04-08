@@ -100,9 +100,9 @@ class SlackApp(object):
     def handle_request(self, form_data):
         rqst = self.request(form_data)
 
-        form_data = {k:v for k, v in request.form.items() if k != 'payload'}
-        self.log.info("FORM>> {}".format(json.dumps(form_data, indent=3)))
-        self.log.info("PAYLOAD>> {}\n".format(json.dumps(rqst.payload, indent=3)))
+        # form_data = {k:v for k, v in request.form.items() if k != 'payload'}
+        # self.log.info("FORM>> {}".format(json.dumps(form_data, indent=3)))
+        # self.log.info("PAYLOAD>> {}\n".format(json.dumps(rqst.payload, indent=3)))
 
         callback = self.on_payload_type.callback_for(rqst.payload)
         rv = callback(rqst)
