@@ -8,22 +8,42 @@ from slackpyez.response import SlackResponse
 
 class SlackRequest(object):
 
-    def __init__(self, app, form_data):
+    def __init__(self, app, rqst_data):
         self.app = app
-        self.form = form_data
-        self.payload = json.loads(form_data.get('payload') or '{}')
-        self.channel = form_data.get('channel_id') or self.payload['channel']['id']
+        self.rqst_data = rqst_data
 
-        self.user_id = form_data.get('user_id') or self.payload['user']['id']
-        self.user_name = form_data.get('user_name') or self.payload['user']['name']
+        if 'event' in self.rqst_data:
+            self.event = self.rqst_data['event']
+            self.user_id = self.event['user']
+            self.channel = self.event['channel']
+            self.text = self.event['text']
+            self.ts = self.event['ts']
 
-        self.response_url = self.form.get('response_url') or self.payload.get('response_url')
-        self.trigger_id = self.form.get('trigger_id') or self.payload.get('trigger_id')
-        self.state = json.loads(self.payload.get('state') or '{}')
+        elif 'payload' in self.rqst_data:
+            self.payload = json.loads(rqst_data['payload'])
+            self.channel = self.payload['channel']['id']
+            self.user_id = self.payload['user']['id']
+            self.user_name = self.payload['user']['name']
+            self.response_url = self.payload['response_url']
+            self.trigger_id = self.payload.get('trigger_id')
+            self.state = json.loads(self.payload.get('state') or '{}')
 
-        oauth_token = app.config.channels[self.channel]['oauth_token']
-        self.client = SlackClient(token=oauth_token)
+        elif 'command' in self.rqst_data:
+            self.channel = self.rqst_data["channel_id"]
+            self.user_id = self.rqst_data['user_id']
+            self.user_name = self.rqst_data['user_name']
+            self.response_url = self.rqst_data['response_url']
+            self.trigger_id = self.rqst_data['trigger_id']
+        else:
+            raise RuntimeError("What is this request?")
 
+        chan_config = app.config.channels[self.channel]
+        token = chan_config.get('bot_oauth_token')
+        self.bot = bool(token)
+        if not self.bot:
+            token = chan_config['oauth_token']
+
+        self.client = SlackClient(token=token)
         self.request = Session()
         self.request.headers["Content-Type"] = "application/json"
         self.request.verify = False

@@ -1,12 +1,11 @@
 import os
 import json
 from pathlib import Path
-
-from flask import request, jsonify
 import toml
 
 from slackpyez.callback_handler import CallbackHandler
 from slackpyez.request import SlackRequest
+from slackpyez.log import create_logger
 
 
 class SlackAppConfig(dict):
@@ -46,6 +45,8 @@ class SlackAppConfig(dict):
 class SlackApp(object):
 
     def __init__(self):
+        self.log = create_logger()
+
         self.on_block_actions = CallbackHandler(('block_id', 'action_id'))
         self.on_dialog_submit = CallbackHandler('callback_id')
         self.on_payload_type = CallbackHandler('type')
@@ -57,10 +58,6 @@ class SlackApp(object):
         self.on_payload_type['block_actions'] = self.handle_block_actions
         self.on_payload_type['dialog_submission'] = self.handle_dialog_submit
 
-    # def register_block_actions(self, on_defs):
-    #     for key_val, func in on_defs:
-    #         self.on_block_actions[key_val] = func
-
     def register_block_action(self, key, func):
         self.on_block_actions[key] = func
 
@@ -68,7 +65,7 @@ class SlackApp(object):
         self.on_dialog_submit[callback_id] = func
 
     def request(self, rqst_form):
-        return SlackRequest(app=self, form_data=rqst_form)
+        return SlackRequest(app=self, rqst_data=rqst_form)
 
     @staticmethod
     def validate_api_response(api_resp):
@@ -101,10 +98,9 @@ class SlackApp(object):
     def handle_request(self, form_data):
         rqst = self.request(form_data)
 
-        form_data = {k:v for k, v in request.form.items() if k != 'payload'}
-        print("FORM>> {}".format(json.dumps(form_data, indent=3)))
-        print("PAYLOAD>> {}\n".format(json.dumps(rqst.payload, indent=3)))
+        # form_data = {k:v for k, v in request.form.items() if k != 'payload'}
+        # self.log.info("FORM>> {}".format(json.dumps(form_data, indent=3)))
+        # self.log.info("PAYLOAD>> {}\n".format(json.dumps(rqst.payload, indent=3)))
 
         callback = self.on_payload_type.callback_for(rqst.payload)
-        rv = callback(rqst)
-        return jsonify(rv) if rv else ""
+        return callback(rqst)
