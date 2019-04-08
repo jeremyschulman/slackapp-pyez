@@ -89,12 +89,14 @@ class SlackApp(object):
     # request handlers
     # -------------------------------------------------------------------------
 
-    def handle_block_actions(self, payload, rqst):
-        action = payload['actions'][0]
-        return self.on_block_actions(action, payload=payload, rqst=rqst)
+    def handle_block_actions(self, rqst):
+        action = rqst.payload['actions'][0]
+        callback = self.on_block_actions.callback_for(action)
+        return callback(rqst, action=action)
 
-    def handle_dialog_submit(self, payload, rqst):
-        return self.on_dialog_submit(payload, submit=payload['submission'], rqst=rqst)
+    def handle_dialog_submit(self, rqst):
+        callback = self.on_dialog_submit.callback_for(rqst.payload)
+        return callback(rqst, submit=rqst.payload['submission'])
 
     def handle_request(self, form_data):
         rqst = self.request(form_data)
@@ -103,5 +105,6 @@ class SlackApp(object):
         print("FORM>> {}".format(json.dumps(form_data, indent=3)))
         print("PAYLOAD>> {}\n".format(json.dumps(rqst.payload, indent=3)))
 
-        rv = self.on_payload_type(rqst.payload, rqst)
+        callback = self.on_payload_type.callback_for(rqst.payload)
+        rv = callback(rqst)
         return jsonify(rv) if rv else ""
