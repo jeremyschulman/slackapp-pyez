@@ -1,4 +1,3 @@
 slackclient
-slackeventsapi
 request
 toml
