@@ -22,13 +22,21 @@ class CallbackHandler(dict):
             self[key_value] = func
         return wrapper
 
-    def __call__(self, *vargs, **kwargs):
-        key_item = vargs[0]
+    def callback_for(self, key_item):
         key_val = self._get_key(key_item)
         callback = self.get(key_val)
 
         if not callback:
-            raise ValueError('Attempting to use key-value {}, no registered handler'.format(
-                key_val))
+            raise ValueError(f'Attempting to use key-value {key_val}, no registered handler')
 
-        return callback(*vargs, **kwargs)
+        return callback
+
+    # def __call__(self, key_item, **kwargs):
+    #     key_val = self._get_key(key_item)
+    #     callback = self.get(key_val)
+    #
+    #     if not callback:
+    #         raise ValueError('Attempting to use key-value {}, no registered handler'.format(
+    #             key_val))
+    #
+    #     return callback(**kwargs)
