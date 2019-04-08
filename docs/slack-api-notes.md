@@ -21,6 +21,58 @@ request.form ==>
 ```
 
 
+Slack Action Request
+--------------------
+````json
+{
+   "type": "block_actions",
+   "team": {
+      "id": "THRDXJR39",
+      "domain": "nwkautomaniac"
+   },
+   "user": {
+      "id": "UHQ9S2KK6",
+      "username": "nwkautomaniac",
+      "name": "nwkautomaniac",
+      "team_id": "THRDXJR39"
+   },
+   "api_app_id": "AHAKQUBNE",
+   "token": "<>",
+   "container": {
+      "type": "message",
+      "message_ts": "1554741985.040800",
+      "channel_id": "CHQQWM6QM",
+      "is_ephemeral": true
+   },
+   "trigger_id": "589903540066.603473637111.b2931cc1a88394ca1b3e04c5c0c176e7",
+   "channel": {
+      "id": "CHQQWM6QM",
+      "name": "networkautomation"
+   },
+   "response_url": "https://hooks.slack.com/actions/<>",
+   "actions": [
+      {
+         "type": "static_select",
+         "action_id": "net_command_id",
+         "block_id": "net_command",
+         "selected_option": {
+            "text": {
+               "type": "plain_text",
+               "text": "Bounce Port",
+               "emoji": true
+            },
+            "value": "net-bounce-port"
+         },
+         "placeholder": {
+            "type": "plain_text",
+            "text": "Get VLANS",
+            "emoji": true
+         },
+         "action_ts": "1554741987.604084"
+      }
+   ]
+}
+````
 Slack Dialog Submit
 -------------------
 ````json

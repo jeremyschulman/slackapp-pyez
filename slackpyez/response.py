@@ -12,6 +12,9 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from requests import Session
+
+
 class SlackResponse(dict):
 
     def __init__(self, rqst):
@@ -20,6 +23,9 @@ class SlackResponse(dict):
         self.rqst = rqst
         self.client = rqst.client
         self['as_user'] = self.rqst.bot
+        self.request = Session()
+        self.request.headers["Content-Type"] = "application/json"
+        self.request.verify = False
 
     # -------------------------------------------------------------------------
     # b_<item> - build blocks for slack messaging
@@ -135,18 +141,33 @@ class SlackResponse(dict):
         }
 
     # -------------------------------------------------------------------------
+    # v_<item> - get value helpers
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def v_action_selected(action):
+        return action['selected_option']['value']
+
+    @staticmethod
+    def v_first_option(options):
+        return 1
+
+    # -------------------------------------------------------------------------
     # messaging methods
     # -------------------------------------------------------------------------
 
     def send_public(self, **kwargs):
         resp = self.client.api_call(
-            "chat.postMessage", channel=self.rqst.channel, **self, **kwargs)
+            "chat.postMessage", channel=self.rqst.channel,
+            **self, **kwargs)
+
         self.rqst.app.validate_api_response(resp)
 
     def send_ephemeral(self, **kwargs):
         api_resp = self.client.api_call(
             "chat.postEphemeral", user=self.rqst.user_id, channel=self.rqst.channel,
             **self, **kwargs)
+
         self.rqst.app.validate_api_response(api_resp)
 
     def on_action(self, key, func):
@@ -156,7 +177,7 @@ class SlackResponse(dict):
         if vargs:
             self['blocks'] = [self.b_section(vargs[0])]
 
-        resp = self.rqst.request.post(self.rqst.response_url,
-                                      json=dict(**self, **kwargs))
+        resp = self.request.post(self.rqst.response_url,
+                                 json=dict(**self, **kwargs))
         if not resp.ok:
             raise RuntimeError(f"Unable to send response: {resp.text}", resp)
