@@ -38,11 +38,9 @@ class SlackRequest(object):
             raise RuntimeError("What is this request?")
 
         chan_config = app.config.channels[self.channel]
-        if 'botuser_oauth_token' in chan_config:
-            self.bot = True
-            token = chan_config['botuser_oauth_token']
-        else:
-            self.bot = False
+        token = chan_config.get('bot_oauth_token')
+        self.bot = bool(token)
+        if not self.bot:
             token = chan_config['oauth_token']
 
         self.client = SlackClient(token=token)
