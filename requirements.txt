@@ -1,3 +1,4 @@
 flask
 slackclient
+slackeventsapi
 request
