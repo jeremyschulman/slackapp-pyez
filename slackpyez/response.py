@@ -18,6 +18,13 @@ class SlackResponse(dict):
                 **kwargs}
 
     @staticmethod
+    def b_context(elements):
+        return {
+            'type': 'context',
+            'elements': elements
+        }
+
+    @staticmethod
     def b_divider():
         return {'type': 'divider'}
 
@@ -27,16 +34,32 @@ class SlackResponse(dict):
                 'elements': elements,
                 **kwargs}
 
+    @staticmethod
+    def b_image(image_url, alt_text, **kwargs):
+        """
+
+        Other Parameters
+        ----------------
+        title : text object
+        block_id : str
+        """
+        return {
+            'type': 'image',
+            'image_url': image_url,
+            'alt_text': alt_text,
+            **kwargs
+        }
+
     # -------------------------------------------------------------------------
     # e_<item> - block element definitions
     # -------------------------------------------------------------------------
 
     @staticmethod
-    def e_button(text, **kwargs):
+    def e_button(text, action_id, **kwargs):
         return {
             'type': 'button',
             'text': SlackResponse.c_text(text, ttype='plain_text'),
-            'action_id': kwargs.get('action_id') or text,
+            'action_id': action_id,
             **kwargs}
 
     @staticmethod
@@ -101,18 +124,16 @@ class SlackResponse(dict):
     # messaging methods
     # -------------------------------------------------------------------------
 
-    def send_message(self, **kwargs):
-        response_json = self.client.api_call("chat.postMessage",
-                                             channel=self.rqst.channel, **kwargs)
+    def send_public(self, **kwargs):
+        resp = self.client.api_call(
+            "chat.postMessage", channel=self.rqst.channel, **self, **kwargs)
+        self.rqst.app.validate_api_response(resp)
 
-        self.rqst.app.validate_api_response(response_json, "chat.postMessage")
-
-    def send_ephemeral_message(self, **kwargs):
-        response_json = self.client.api_call(
+    def send_ephemeral(self, **kwargs):
+        api_resp = self.client.api_call(
             "chat.postEphemeral", user=self.rqst.user_id, channel=self.rqst.channel,
-            **kwargs
-        )
-        self.rqst.app.validate_api_response(response_json, "chat.postEphemeral")
+            **self, **kwargs)
+        self.rqst.app.validate_api_response(api_resp)
 
     def on_action(self, key, func):
         self.app.register_block_action(key, func)

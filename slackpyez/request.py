@@ -28,16 +28,18 @@ class SlackRequest(object):
         self.request.headers["Content-Type"] = "application/json"
         self.request.verify = False
 
-    @staticmethod
-    def delete(rt='ephemeral'):
-        return {
-            'response_type': rt,
-            'text': '',
-            'replace_original': True,
-            'delete_original': True
-        }
+    # @staticmethod
+    # def delete(rt='ephemeral'):
+    #     return {
+    #         'response_type': rt,
+    #         'text': '',
+    #         'replace_original': True,
+    #         'delete_original': True
+    #     }
 
-    #
+    def delete(self):
+        self.response().send(delete_original=True, replace_original=True)
+
     # # -------------------------------------------------------------------------
     # # m_<item> - build dicts used for slack messaging data structures
     # # -------------------------------------------------------------------------
