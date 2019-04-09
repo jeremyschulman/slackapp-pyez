@@ -40,21 +40,6 @@ class PickleSlackSession(dict, SessionMixin):
         self.sid = sid
         self.read()
 
-    def __getitem__(self, key):
-        return super(PickleSlackSession, self).__getitem__(key)
-
-    def __setitem__(self, key, value):
-        super(PickleSlackSession, self).__setitem__(key, value)
-
-    def __delitem__(self, key):
-        super(PickleSlackSession, self).__delitem__(key)
-
-    def __iter__(self):
-        return super(PickleSlackSession, self).__iter__()
-
-    def __len__(self):
-        return super(PickleSlackSession, self).__len__()
-
     def read(self):
         try:
             pdata = pickle.load(self.path.open('rb'))
