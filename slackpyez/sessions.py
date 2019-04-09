@@ -96,29 +96,26 @@ class SlackSessionInterface(SessionInterface):
         self.directory.mkdir(exist_ok=True)
 
     def open_session(self, app, request):
-        if 'Slack' in request.environ['HTTP_USER_AGENT']:
-            r_form = request.form
-            payload = None
-
-            if 'event' in r_form:
-                sid = r_form['user']
-            elif 'payload' in r_form:
-                payload = json.loads(request.form['payload'] or '{}')
-                sid = payload['user']['id']
-            elif 'command' in r_form:
-                sid = r_form['user_id']
-            else:
-                # could be called by the Slack agent, but not related to Slack API
-                # calls.  TODO: find a better check than HTTP_USER_AGENT
-                return PickleCookieSession(self, request, app)
-
-            session = PickleSlackSession(self, sid)
-            session['user_id'] = sid
-            session['payload'] = payload or {}
-            return session
-
-        else:
+        if 'X-Slack-Signature' not in request.headers:
             return PickleCookieSession(self, request, app)
+
+        r_form = request.form
+        payload = None
+
+        if 'event' in r_form:
+            sid = r_form['user']
+        elif 'payload' in r_form:
+            payload = json.loads(request.form['payload'] or '{}')
+            sid = payload['user']['id']
+        elif 'command' in r_form:
+            sid = r_form['user_id']
+        else:
+            raise RuntimeError("Do not know this Slack API.")
+
+        session = PickleSlackSession(self, sid)
+        session['user_id'] = sid
+        session['payload'] = payload or {}
+        return session
 
     def save_session(self, app, session, response):
         session.save(app, session, response)
