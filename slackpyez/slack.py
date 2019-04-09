@@ -65,14 +65,17 @@ class SlackApp(object):
 
         self.on_block_actions = CallbackHandler('block_id')
         self.on_dialog_submit = CallbackHandler('callback_id')
+        self.on_imsg = CallbackHandler('callback_id')
+
         self.on_payload_type = CallbackHandler('type')
 
         self.config = SlackAppConfig()
 
         # setup the default handler functions
 
-        self.on_payload_type['block_actions'] = self.handle_block_actions
-        self.on_payload_type['dialog_submission'] = self.handle_dialog_submit
+        self.on_payload_type['block_actions'] = self._handle_block_actions
+        self.on_payload_type['dialog_submission'] = self._handle_dialog_submit
+        self.on_payload_type['interactive_message'] = self._handle_imsg
 
     @staticmethod
     def register_app(flaskapp, sessiondb_path):
@@ -87,33 +90,22 @@ class SlackApp(object):
     def request(self, rqst_form):
         return SlackRequest(app=self, rqst_data=rqst_form)
 
-    @staticmethod
-    def validate_api_response(api_resp):
-        if api_resp.get("ok"):
-            return
-
-        print("API failed, messages: ")
-        meta = api_resp.get("response_metadata") or {}
-        meta_msgs = meta.get("messages")
-        if meta_msgs:
-            for message in meta_msgs:
-                print(f">: {message}")
-
-        raise RuntimeError(f"Slack API failed.\n{json.dumps(api_resp, indent=3)}\n",
-                           api_resp)
-
     # -------------------------------------------------------------------------
     # request handlers
     # -------------------------------------------------------------------------
 
-    def handle_block_actions(self, rqst):
+    def _handle_block_actions(self, rqst):
         action = rqst.payload['actions'][0]
         callback = self.on_block_actions.callback_for(action)
-        return callback(rqst, action=action)
+        return callback(rqst, action)
 
-    def handle_dialog_submit(self, rqst):
+    def _handle_dialog_submit(self, rqst):
         callback = self.on_dialog_submit.callback_for(rqst.payload)
-        return callback(rqst, submit=rqst.payload['submission'])
+        return callback(rqst, rqst.payload['submission'])
+
+    def _handle_imsg(self, rqst):
+        callback = self.on_imsg.callback_for(rqst.payload)
+        return callback(rqst, rqst.payload['actions'][0])
 
     def handle_request(self, form_data):
         rqst = self.request(form_data)
