@@ -25,16 +25,25 @@ class SlackRequest(object):
     def __init__(self, app, rqst_data):
         self.app = app
         self.rqst_data = rqst_data
+
+        self.rqst_type = session['rqst_type']
         self.user_id = session['user_id']
 
-        if 'event' in self.rqst_data:
+        if self.rqst_type == 'command':
+            self.channel = self.rqst_data["channel_id"]
+            self.user_name = self.rqst_data['user_name']
+            self.response_url = self.rqst_data['response_url']
+            self.trigger_id = self.rqst_data['trigger_id']
+
+        elif self.rqst_type == 'event':
             self.event = self.rqst_data['event']
             self.user_id = self.event['user']
             self.channel = self.event['channel']
             self.text = self.event['text']
             self.ts = self.event['ts']
 
-        elif 'payload' in self.rqst_data:
+        elif session['payload']:
+            # rqst_type == the payload['type'] value in this case
             self.payload = session['payload']
             self.channel = self.payload['channel']['id']
             self.user_name = self.payload['user']['name']
@@ -42,11 +51,6 @@ class SlackRequest(object):
             self.trigger_id = self.payload.get('trigger_id')
             self.state = json.loads(self.payload.get('state') or '{}')
 
-        elif 'command' in self.rqst_data:
-            self.channel = self.rqst_data["channel_id"]
-            self.user_name = self.rqst_data['user_name']
-            self.response_url = self.rqst_data['response_url']
-            self.trigger_id = self.rqst_data['trigger_id']
         else:
             raise RuntimeError("What is this request?")
 

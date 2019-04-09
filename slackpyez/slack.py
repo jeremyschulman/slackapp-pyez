@@ -20,6 +20,7 @@ import toml
 from slackpyez.callback_handler import CallbackHandler
 from slackpyez.request import SlackRequest
 from slackpyez.log import create_logger
+from slackpyez.sessions import SlackAppSessionInterface
 
 
 class SlackAppConfig(dict):
@@ -71,6 +72,9 @@ class SlackApp(object):
 
         self.on_payload_type['block_actions'] = self.handle_block_actions
         self.on_payload_type['dialog_submission'] = self.handle_dialog_submit
+
+    def register_app(self, flaskapp, sessiondb_path):
+        flaskapp.session_interface = SlackAppSessionInterface(sessiondb_path)
 
     def register_block_action(self, key, func):
         self.on_block_actions[key] = func

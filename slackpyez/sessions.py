@@ -28,13 +28,13 @@ import pickle
 from uuid import uuid1
 from flask.sessions import SessionInterface, SessionMixin
 
-__all__ = ['SlackSessionInterface']
+__all__ = ['SlackAppSessionInterface']
 
 
-class PickleSlackSession(dict, SessionMixin):
+class PickleSession(dict, SessionMixin):
 
     def __init__(self, session_if, sid):
-        super(PickleSlackSession, self).__init__()
+        super(PickleSession, self).__init__()
         self.session_if = session_if
         self.path = session_if.directory / sid
         self.sid = sid
@@ -48,12 +48,18 @@ class PickleSlackSession(dict, SessionMixin):
             pass
 
     def save(self, *vargs, **kwargs):
-        self.pop('payload', None)                   # do not store payload
         with self.path.open('wb') as ofile:
             pickle.dump(dict.copy(self), ofile)
 
 
-class PickleCookieSession(PickleSlackSession):
+class PickleSlackSession(PickleSession):
+
+    def save(self, *vargs, **kwargs):
+        self.pop('payload', None)                   # do not store payload
+        super(PickleSlackSession, self).save()
+
+
+class PickleCookieSession(PickleSession):
 
     def __init__(self, session_if, request, app,):
         sid = (request.cookies.get(app.session_cookie_name) or
@@ -75,7 +81,7 @@ class PickleCookieSession(PickleSlackSession):
                             expires=cookie_exp, httponly=True, domain=domain)
 
 
-class SlackSessionInterface(SessionInterface):
+class SlackAppSessionInterface(SessionInterface):
 
     def __init__(self, directory):
         self.directory = Path(directory)
@@ -85,22 +91,38 @@ class SlackSessionInterface(SessionInterface):
         if 'X-Slack-Signature' not in request.headers:
             return PickleCookieSession(self, request, app)
 
+        err = False
         r_form = request.form
         payload = None
 
-        if 'event' in r_form:
-            sid = r_form['user']
-        elif 'payload' in r_form:
+        if 'payload' in r_form:
             payload = json.loads(request.form['payload'] or '{}')
+            rqst_type = payload['type']
             sid = payload['user']['id']
         elif 'command' in r_form:
+            rqst_type = 'command'
             sid = r_form['user_id']
+        elif request.json:
+            if 'event' in request.json:
+                rqst_type = 'event'
+                sid = request.json['event']['user']
+            elif 'type' in request.json:
+                return PickleCookieSession(self, request, app)
+            else:
+                err = True
         else:
+            err = True
+
+        if err:
+            print("HEADERS>> {}".format(json.dumps(dict(request.headers), indent=3)))
+            print("FORM>> {}".format(json.dumps(r_form, indent=3)))
+            print("JSON>> {}".format(json.dumps(request.json, indent=3)))
             raise RuntimeError("Do not know this Slack API.")
 
         session = PickleSlackSession(self, sid)
+        session['rqst_type'] = rqst_type
         session['user_id'] = sid
-        session['payload'] = payload or {}
+        session['payload'] = payload
         return session
 
     def save_session(self, app, session, response):
