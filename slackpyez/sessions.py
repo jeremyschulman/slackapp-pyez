@@ -13,83 +13,100 @@
 #  limitations under the License.
 
 import os
+from pathlib import Path
+from contextlib import suppress
+
 import json
-from pickle import UnpicklingError, dumps, loads
+import pickle
+from uuid import uuid1
 from flask.sessions import SessionInterface, SessionMixin
 
 __all__ = ['SlackSessionInterface']
 
 
-class PickleSession(dict, SessionMixin):
-    """Server-side session implementation.
+class PickleSlackSession(dict, SessionMixin):
 
-    Uses pickle to achieve a disk-backed session such that multiple
-    worker processes can access the same session data.
-    """
-
-    def __init__(self, directory, sid, *args, **kwargs):
-        self.path = os.path.join(directory, sid)
-        self.directory = directory
+    def __init__(self, session_if, sid):
+        super(PickleSlackSession, self).__init__()
+        self.session_if = session_if
+        self.path = session_if.directory / sid
         self.sid = sid
-        self.data = None
         self.read()
 
     def __getitem__(self, key):
-        self.read()
-        return self.data[key]
+        return super(PickleSlackSession, self).__getitem__(key)
 
     def __setitem__(self, key, value):
-        self.data[key] = value
-        self.save()
+        super(PickleSlackSession, self).__setitem__(key, value)
 
     def __delitem__(self, key):
-        del self.data[key]
-        self.save()
+        super(PickleSlackSession, self).__delitem__(key)
 
     def __iter__(self):
-        return iter(self.data)
+        return super(PickleSlackSession, self).__iter__()
 
     def __len__(self):
-        return len(self.data)
+        return super(PickleSlackSession, self).__len__()
 
     def read(self):
-        """Load pickle from (ram)disk."""
         try:
-            with open(self.path, 'rb') as blob:
-                self.data = loads(blob.read())
-        except (FileNotFoundError, ValueError, EOFError, UnpicklingError):
-            self.data = {}
+            pdata = pickle.load(self.path.open('rb'))
+            dict.update(self, pdata)
+        except (FileNotFoundError, ValueError, EOFError, pickle.UnpicklingError):
+            pass
 
-    def save(self):
-        """Dump pickle to (ram)disk atomically."""
-        new_name = '{}.new'.format(self.path)
-        with open(new_name, 'wb') as blob:
-            blob.write(dumps(self.data))
-        os.rename(new_name, self.path)
+    def save(self, *vargs, **kwargs):
+        with self.path.open('wb') as ofile:
+            pickle.dump(dict.copy(self), ofile)
+
+
+class PickleCookieSession(PickleSlackSession):
+    def save(self, app, session, response):
+        domain = self.session_if.get_cookie_domain(app)
+
+        if not session:
+            with suppress(FileNotFoundError):
+                session.path.unlink()
+            response.delete_cookie(app.session_cookie_name, domain=domain)
+            return
+
+        cookie_exp = self.session_if.get_expiration_time(app, session)
+        response.set_cookie(app.session_cookie_name, session.sid,
+                            expires=cookie_exp, httponly=True, domain=domain)
 
 
 class SlackSessionInterface(SessionInterface):
-    """Basic SessionInterface which uses the PickleSession."""
 
     def __init__(self, directory):
-        self.directory = os.path.abspath(directory)
-        os.makedirs(self.directory, exist_ok=True)
+        self.directory = Path(directory)
+        self.directory.mkdir(exist_ok=True)
 
     def open_session(self, app, request):
-        r_form = request.form
-        sid = (r_form.get('user_id') or
-               r_form.get('user') or
-               request.json.get('event', {}).get('user'))
+        if 'Slack' in request.environ['HTTP_USER_AGENT']:
+            r_form = request.form
+            payload = None
 
-        payload = None
-        if not sid and 'payload' in request.form:
-            payload = json.loads(request.form['payload'] or '{}')
-            sid = payload['user']['id']
+            if 'event' in r_form:
+                sid = r_form['user']
+            elif 'payload' in r_form:
+                payload = json.loads(request.form['payload'] or '{}')
+                sid = payload['user']['id']
+            elif 'command' in r_form:
+                sid = r_form['user_id']
+            else:
+                sid = (request.cookies.get(app.session_cookie_name) or
+                       '{}-{}'.format(uuid1(), os.getpid()))
+                return PickleCookieSession(self, sid)
 
-        session = PickleSession(self.directory, sid)
-        session['user_id'] = sid
-        session['payload'] = payload
-        return session
+            session = PickleSlackSession(self, sid)
+            session['user_id'] = sid
+            session['payload'] = payload or {}
+            return session
+
+        else:
+            sid = (request.cookies.get(app.session_cookie_name) or
+                   '{}-{}'.format(uuid1(), os.getpid()))
+            return PickleCookieSession(self, sid)
 
     def save_session(self, app, session, response):
-        session.save()
+        session.save(app, session, response)
