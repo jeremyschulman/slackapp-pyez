@@ -48,7 +48,7 @@ class PickleSlackSession(dict, SessionMixin):
             pass
 
     def save(self, *vargs, **kwargs):
-        self.pop('payload', None)
+        self.pop('payload', None)                   # do not store payload
         with self.path.open('wb') as ofile:
             pickle.dump(dict.copy(self), ofile)
 
