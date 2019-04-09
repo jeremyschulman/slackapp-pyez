@@ -27,6 +27,7 @@ class SlackAppConfig(dict):
     def __init__(self):
         super(SlackAppConfig, self).__init__()
         self.channels = None
+        self.data = None
 
     def from_envar(self, envar):
         conf_file = os.environ.get(envar)
@@ -41,19 +42,19 @@ class SlackAppConfig(dict):
             raise RuntimeError(f'The environment variable {envar} is set to '
                                f'{conf_file}, but this file does not exist')
 
-        slack_api_config = toml.load(conf_file_p)
+        self.data = toml.load(conf_file_p)
 
         self.channels = {_chan['id']: _chan
-                         for _chan in slack_api_config['channel']}
+                         for _chan in self.data['channel']}
 
         self['ALL_SLACK_VERIFY_TOKENS'] = [
             _chan['verify_token']
-            for _chan in slack_api_config['channel']
+            for _chan in self.data['channel']
         ]
 
         self['SLACK_CHANNEL_NAME_TO_ID'] = {
             _chan['name']: _chan['id']
-            for _chan in slack_api_config['channel']
+            for _chan in self.data['channel']
         }
 
 
@@ -62,7 +63,7 @@ class SlackApp(object):
     def __init__(self):
         self.log = create_logger()
 
-        self.on_block_actions = CallbackHandler(('block_id', 'action_id'))
+        self.on_block_actions = CallbackHandler('block_id')
         self.on_dialog_submit = CallbackHandler('callback_id')
         self.on_payload_type = CallbackHandler('type')
 
@@ -73,7 +74,8 @@ class SlackApp(object):
         self.on_payload_type['block_actions'] = self.handle_block_actions
         self.on_payload_type['dialog_submission'] = self.handle_dialog_submit
 
-    def register_app(self, flaskapp, sessiondb_path):
+    @staticmethod
+    def register_app(flaskapp, sessiondb_path):
         flaskapp.session_interface = SlackAppSessionInterface(sessiondb_path)
 
     def register_block_action(self, key, func):

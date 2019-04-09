@@ -75,11 +75,11 @@ class SlackResponse(dict):
     # -------------------------------------------------------------------------
 
     @staticmethod
-    def e_button(text, action_id, **kwargs):
+    def e_button(text, action_id=None, **kwargs):
         return {
             'type': 'button',
             'text': SlackResponse.c_text(text, ttype='plain_text'),
-            'action_id': action_id,
+            'action_id': action_id or text,
             **kwargs}
 
     @staticmethod
