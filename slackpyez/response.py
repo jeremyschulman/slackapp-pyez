@@ -14,8 +14,12 @@
 
 from requests import Session
 
+__all__ = ['SlackResponse']
+
 
 class SlackResponse(dict):
+
+    DEFAULT_SELECT_PLACEHOLDER = 'select'
 
     def __init__(self, rqst):
         super(SlackResponse, self).__init__()
@@ -75,11 +79,12 @@ class SlackResponse(dict):
     # -------------------------------------------------------------------------
 
     @staticmethod
-    def e_button(text, action_id, **kwargs):
+    def e_button(text, action_id=None, value=None, **kwargs):
         return {
             'type': 'button',
             'text': SlackResponse.c_text(text, ttype='plain_text'),
-            'action_id': action_id,
+            'action_id': action_id or text,
+            'value': value or text,
             **kwargs}
 
     @staticmethod
@@ -91,17 +96,40 @@ class SlackResponse(dict):
         }
 
     @staticmethod
-    def e_static_select(placeholder, action_id, options=None, option_groups=None, **kwargs):
+    def e_static_select(action_id, placeholder=None,
+                        options=None, option_groups=None,
+                        **kwargs):
+        """
+        This helper creates the "menu option select" message element dictionary.
+
+        Parameters
+        ----------
+        action_id
+        placeholder
+        options
+        option_groups
+        kwargs
+
+        Other Parameters
+        ----------------
+
+        Returns
+        -------
+        dict
+        """
         ele = {
             'type': 'static_select',
-            'placeholder': SlackResponse.c_text(placeholder, 'plain_text'),
             'action_id': action_id,
+            'placeholder': SlackResponse.c_text(
+                placeholder or SlackResponse.DEFAULT_SELECT_PLACEHOLDER,
+                'plain_text')
         }
 
         if options:
             ele['options'] = options
         elif option_groups:
             ele['option_groups'] = option_groups
+
         else:
             raise RuntimeError("Missing arg 'options' | 'option_groups'")
 
@@ -149,31 +177,72 @@ class SlackResponse(dict):
         return action['selected_option']['value']
 
     @staticmethod
+    def v_imsga_selected(action):
+        return action['actions'][0]['value']
+
+    @staticmethod
+    def v_action(action):
+        return {
+            'button':
+                lambda a: a.get('value') or a.get('action_id'),
+            'static_select':
+                lambda a: SlackResponse.v_action_selected(a),
+            'interactive_message':
+                lambda a: SlackResponse.v_imsga_selected(a)
+        }[action['type']](action)
+
+    @staticmethod
     def v_first_option(options):
-        return 1
+        return options[0]['text']['text']
+
+    @staticmethod
+    def v_first_group_option(group_options):
+        return group_options[0]['options'][0]['text']['text']
 
     # -------------------------------------------------------------------------
     # messaging methods
     # -------------------------------------------------------------------------
 
     def send_public(self, **kwargs):
-        resp = self.client.api_call(
-            "chat.postMessage", channel=self.rqst.channel,
-            **self, **kwargs)
+        resp = self.client.api_call("chat.postMessage",
+                                    channel=self.rqst.channel,
+                                    **self, **kwargs)
 
-        self.rqst.app.validate_api_response(resp)
+        self.validate_api_response(resp)
 
     def send_ephemeral(self, **kwargs):
-        api_resp = self.client.api_call(
-            "chat.postEphemeral", user=self.rqst.user_id, channel=self.rqst.channel,
-            **self, **kwargs)
+        api_resp = self.client.api_call("chat.postEphemeral",
+                                        user=self.rqst.user_id,
+                                        channel=self.rqst.channel,
+                                        **self, **kwargs)
 
-        self.rqst.app.validate_api_response(api_resp)
-
-    def on_action(self, key, func):
-        self.app.register_block_action(key, func)
+        self.validate_api_response(api_resp)
 
     def send(self, *vargs, **kwargs):
+        """
+        Send the message to the response_url.  The caller is expected to setup the
+        response dictionary items before calling.
+
+        As a 'shortcut feature', if the caller passes a text string as vargs[0],
+        then this function will wrap that text in a section block and auto-creates
+        the 'blocks' body.  If you use this, do *not* have blocks defined in your
+        response message as it will cause a conflict, and you will get a code
+        Exception.
+
+        Parameters
+        ----------
+        vargs : list[<str>][0]
+            As described above
+
+        kwargs
+            Any additional message body fields to send that are not already
+            part of the response dict.
+
+        Raises
+        ------
+        RuntimeError
+            If the call to the Slack API fails.
+        """
         if vargs:
             self['blocks'] = [self.b_section(vargs[0])]
 
@@ -181,3 +250,25 @@ class SlackResponse(dict):
                                  json=dict(**self, **kwargs))
         if not resp.ok:
             raise RuntimeError(f"Unable to send response: {resp.text}", resp)
+
+    # -------------------------------------------------------------------------
+    # "on" registers
+    # -------------------------------------------------------------------------
+
+    def on_action(self, key, func):
+        self.app.register_block_action(key, func)
+
+    @staticmethod
+    def validate_api_response(api_resp):
+        if api_resp.get("ok"):
+            return
+
+        print("API failed, messages: ")
+        meta = api_resp.get("response_metadata") or {}
+        meta_msgs = meta.get("messages")
+        if meta_msgs:
+            for message in meta_msgs:
+                print(f">: {message}")
+
+        raise RuntimeError(f"Slack API failed.\n{json.dumps(api_resp, indent=3)}\n",
+                           api_resp)

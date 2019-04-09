@@ -127,3 +127,39 @@ request.json ==>
        ]
     }
 ````
+
+
+Interactive Message Response
+----------------------------
+```json
+{
+   "type": "interactive_message",
+   "actions": [
+      {
+         "name": "go_button",
+         "type": "button",
+         "value": "yes"
+      }
+   ],
+   "callback_id": "get-vlans-callback",
+   "team": {
+      "id": "THRDXJR39",
+      "domain": "nwkautomaniac"
+   },
+   "channel": {
+      "id": "CHQQWM6QM",
+      "name": "networkautomation"
+   },
+   "user": {
+      "id": "UHQ9S2KK6",
+      "name": "nwkautomaniac"
+   },
+   "action_ts": "1554829380.182062",
+   "message_ts": "1554829376.086100",
+   "attachment_id": "1",
+   "token": "<>",
+   "is_app_unfurl": false,
+   "response_url": "https://hooks.slack.com/actions/<>",
+   "trigger_id": "606070084439.603473637111.48d20eb731dee79797d61bdcc10938d6"
+}
+ ```

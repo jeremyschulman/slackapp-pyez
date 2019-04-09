@@ -20,12 +20,14 @@ import toml
 from slackpyez.callback_handler import CallbackHandler
 from slackpyez.request import SlackRequest
 from slackpyez.log import create_logger
+from slackpyez.sessions import SlackAppSessionInterface
 
 
 class SlackAppConfig(dict):
     def __init__(self):
         super(SlackAppConfig, self).__init__()
         self.channels = None
+        self.data = None
 
     def from_envar(self, envar):
         conf_file = os.environ.get(envar)
@@ -40,19 +42,19 @@ class SlackAppConfig(dict):
             raise RuntimeError(f'The environment variable {envar} is set to '
                                f'{conf_file}, but this file does not exist')
 
-        slack_api_config = toml.load(conf_file_p)
+        self.data = toml.load(conf_file_p)
 
         self.channels = {_chan['id']: _chan
-                         for _chan in slack_api_config['channel']}
+                         for _chan in self.data['channel']}
 
         self['ALL_SLACK_VERIFY_TOKENS'] = [
             _chan['verify_token']
-            for _chan in slack_api_config['channel']
+            for _chan in self.data['channel']
         ]
 
         self['SLACK_CHANNEL_NAME_TO_ID'] = {
             _chan['name']: _chan['id']
-            for _chan in slack_api_config['channel']
+            for _chan in self.data['channel']
         }
 
 
@@ -61,16 +63,23 @@ class SlackApp(object):
     def __init__(self):
         self.log = create_logger()
 
-        self.on_block_actions = CallbackHandler(('block_id', 'action_id'))
+        self.on_block_actions = CallbackHandler('block_id')
         self.on_dialog_submit = CallbackHandler('callback_id')
+        self.on_imsg = CallbackHandler('callback_id')
+
         self.on_payload_type = CallbackHandler('type')
 
         self.config = SlackAppConfig()
 
         # setup the default handler functions
 
-        self.on_payload_type['block_actions'] = self.handle_block_actions
-        self.on_payload_type['dialog_submission'] = self.handle_dialog_submit
+        self.on_payload_type['block_actions'] = self._handle_block_actions
+        self.on_payload_type['dialog_submission'] = self._handle_dialog_submit
+        self.on_payload_type['interactive_message'] = self._handle_imsg
+
+    @staticmethod
+    def register_app(flaskapp, sessiondb_path):
+        flaskapp.session_interface = SlackAppSessionInterface(sessiondb_path)
 
     def register_block_action(self, key, func):
         self.on_block_actions[key] = func
@@ -81,33 +90,22 @@ class SlackApp(object):
     def request(self, rqst_form):
         return SlackRequest(app=self, rqst_data=rqst_form)
 
-    @staticmethod
-    def validate_api_response(api_resp):
-        if api_resp.get("ok"):
-            return
-
-        print("API failed, messages: ")
-        meta = api_resp.get("response_metadata") or {}
-        meta_msgs = meta.get("messages")
-        if meta_msgs:
-            for message in meta_msgs:
-                print(f">: {message}")
-
-        raise RuntimeError(f"Slack API failed.\n{json.dumps(api_resp, indent=3)}\n",
-                           api_resp)
-
     # -------------------------------------------------------------------------
     # request handlers
     # -------------------------------------------------------------------------
 
-    def handle_block_actions(self, rqst):
+    def _handle_block_actions(self, rqst):
         action = rqst.payload['actions'][0]
         callback = self.on_block_actions.callback_for(action)
-        return callback(rqst, action=action)
+        return callback(rqst, action)
 
-    def handle_dialog_submit(self, rqst):
+    def _handle_dialog_submit(self, rqst):
         callback = self.on_dialog_submit.callback_for(rqst.payload)
-        return callback(rqst, submit=rqst.payload['submission'])
+        return callback(rqst, rqst.payload['submission'])
+
+    def _handle_imsg(self, rqst):
+        callback = self.on_imsg.callback_for(rqst.payload)
+        return callback(rqst, rqst.payload['actions'][0])
 
     def handle_request(self, form_data):
         rqst = self.request(form_data)
