@@ -31,9 +31,9 @@ def create_logger(format=None, logfile=None, stdout=True):
     fh.setFormatter(formatter)
     log.addHandler(fh)
 
-    if stdout is True:
-        fh = logging.StreamHandler(sys.stdout)
-        fh.setFormatter(formatter)
-        log.addHandler(fh)
+    # if stdout is True:
+    #     fh = logging.StreamHandler(sys.stdout)
+    #     fh.setFormatter(formatter)
+    #     log.addHandler(fh)
 
     return log

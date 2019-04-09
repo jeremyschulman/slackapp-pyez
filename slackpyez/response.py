@@ -14,8 +14,12 @@
 
 from requests import Session
 
+__all__ = ['SlackResponse']
+
 
 class SlackResponse(dict):
+
+    DEFAULT_SELECT_PLACEHOLDER = '-select-'
 
     def __init__(self, rqst):
         super(SlackResponse, self).__init__()
@@ -91,17 +95,40 @@ class SlackResponse(dict):
         }
 
     @staticmethod
-    def e_static_select(placeholder, action_id, options=None, option_groups=None, **kwargs):
+    def e_static_select(action_id, placeholder=None,
+                        options=None, option_groups=None,
+                        **kwargs):
+        """
+        This helper creates the "menu option select" message element dictionary.
+
+        Parameters
+        ----------
+        action_id
+        placeholder
+        options
+        option_groups
+        kwargs
+
+        Other Parameters
+        ----------------
+
+        Returns
+        -------
+        dict
+        """
         ele = {
             'type': 'static_select',
-            'placeholder': SlackResponse.c_text(placeholder, 'plain_text'),
             'action_id': action_id,
+            'placeholder': SlackResponse.c_text(
+                placeholder or SlackResponse.DEFAULT_SELECT_PLACEHOLDER,
+                'plain_text')
         }
 
         if options:
             ele['options'] = options
         elif option_groups:
             ele['option_groups'] = option_groups
+
         else:
             raise RuntimeError("Missing arg 'options' | 'option_groups'")
 
@@ -150,7 +177,11 @@ class SlackResponse(dict):
 
     @staticmethod
     def v_first_option(options):
-        return 1
+        return options[0]['text']['text']
+
+    @staticmethod
+    def v_first_group_option(group_options):
+        return group_options[0]['options'][0]['text']['text']
 
     # -------------------------------------------------------------------------
     # messaging methods
