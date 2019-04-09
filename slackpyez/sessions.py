@@ -12,6 +12,13 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""
+This file implements a Flask SessionInterface that will create sessions based on the Slack user_id
+value.  If the inbound message is not "slack related", then it will use a standard cookies approach.
+
+Some of this code was inspired from: http://flask.pocoo.org/snippets/132/
+"""
+
 import os
 from pathlib import Path
 from contextlib import suppress
@@ -61,6 +68,13 @@ class PickleSlackSession(dict, SessionMixin):
 
 
 class PickleCookieSession(PickleSlackSession):
+
+    def __init__(self, session_if, request, app,):
+        sid = (request.cookies.get(app.session_cookie_name) or
+               '{}-{}'.format(uuid1(), os.getpid()))
+
+        super(PickleCookieSession, self).__init__(session_if, sid)
+
     def save(self, app, session, response):
         domain = self.session_if.get_cookie_domain(app)
 
@@ -94,9 +108,9 @@ class SlackSessionInterface(SessionInterface):
             elif 'command' in r_form:
                 sid = r_form['user_id']
             else:
-                sid = (request.cookies.get(app.session_cookie_name) or
-                       '{}-{}'.format(uuid1(), os.getpid()))
-                return PickleCookieSession(self, sid)
+                # could be called by the Slack agent, but not related to Slack API
+                # calls.  TODO: find a better check than HTTP_USER_AGENT
+                return PickleCookieSession(self, request, app)
 
             session = PickleSlackSession(self, sid)
             session['user_id'] = sid
@@ -104,9 +118,7 @@ class SlackSessionInterface(SessionInterface):
             return session
 
         else:
-            sid = (request.cookies.get(app.session_cookie_name) or
-                   '{}-{}'.format(uuid1(), os.getpid()))
-            return PickleCookieSession(self, sid)
+            return PickleCookieSession(self, request, app)
 
     def save_session(self, app, session, response):
         session.save(app, session, response)
