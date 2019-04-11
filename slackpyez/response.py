@@ -31,36 +31,7 @@ class SlackResponse(dict):
         # self.request.headers['Authorization'] = 'Bearer {}'.format(self.client.token)
         self.request.verify = False
 
-    # -------------------------------------------------------------------------
-    # v_<item> - get value helpers
-    # -------------------------------------------------------------------------
 
-    @staticmethod
-    def v_action_selected(action):
-        return action['selected_option']['value']
-
-    @staticmethod
-    def v_imsga_selected(action):
-        return action['actions'][0]['value']
-
-    @staticmethod
-    def v_action(action):
-        return {
-            'button':
-                lambda a: a.get('value') or a.get('action_id'),
-            'static_select':
-                lambda a: SlackResponse.v_action_selected(a),
-            'interactive_message':
-                lambda a: SlackResponse.v_imsga_selected(a)
-        }[action['type']](action)
-
-    @staticmethod
-    def v_first_option(options):
-        return options[0]['text']['text']
-
-    @staticmethod
-    def v_first_group_option(group_options):
-        return group_options[0]['options'][0]['text']['text']
 
     # -------------------------------------------------------------------------
     # messaging methods

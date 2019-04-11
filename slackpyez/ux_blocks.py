@@ -15,9 +15,133 @@
 DEFAULT_SELECT_PLACEHOLDER = 'select'
 
 
+def section(text, **kwargs):
+    """
+    Creates a "Section" block.
+
+    Notes
+    -----
+    API: https://api.slack.com/reference/messaging/blocks#section
+
+    Parameters
+    ----------
+    text : str
+        The primary text of the section block.
+
+    Other Parameters
+    ----------------
+    fields : list[<text compositions>]
+    block_id : str
+    accessory : dict
+        One of the block element objects defined:
+        https://api.slack.com/reference/messaging/block-elements
+
+    Returns
+    -------
+    dict
+    """
+    return {'type': 'section',
+            'text': c_text(text),
+            **kwargs}
+
+
+def context(elements):
+    """
+    Create a "Context" block that allows you to define text and image
+    composition items in the `elements`.
+
+    Notes
+    -----
+    API: https://api.slack.com/reference/messaging/blocks#context
+
+    Parameters
+    ----------
+    elements
+
+    Other Parameters
+    ----------------
+    block_id : str
+
+    Returns
+    -------
+    dict
+    """
+    return {
+        'type': 'context',
+        'elements': elements
+    }
+
+
+def divider():
+    """
+    Creates a "Divider" block.  Nothing magical about this one.
+
+    Notes
+    -----
+    API: https://api.slack.com/reference/messaging/blocks#divider
+
+    Returns
+    -------
+    dict
+    """
+    return {'type': 'divider'}
+
+
+def actions(elements, **kwargs):
+    """
+    Define a block "action".
+    API: https://api.slack.com/reference/messaging/blocks#actions
+
+    Other Parameters
+    ----------------
+    block_id : str
+
+    Returns
+    -------
+    dict
+    """
+    return {'type': 'actions',
+            'elements': elements,
+            **kwargs}
+
+
+def image(image_url, alt_text, **kwargs):
+    """
+    Create an "Image" block.
+
+    Parameters
+    ----------
+    image_url : str
+    alt_text : str
+
+    Notes
+    -----
+    API: https://api.slack.com/reference/messaging/blocks#image
+
+    Other Parameters
+    ----------------
+    title : text object
+    block_id : str
+    """
+    return {
+        'type': 'image',
+        'image_url': image_url,
+        'alt_text': alt_text,
+        **kwargs
+    }
+
+
 # -------------------------------------------------------------------------
 # c_<item> - message composition object
 # -------------------------------------------------------------------------
+
+def c_confirm(title, text, confirm, deny='Cancel'):
+    return {
+        'title': c_ptext(title),
+        'text': c_text(text),
+        'confirm': c_ptext(confirm),
+        'deny': c_ptext(deny)
+    }
 
 
 def c_text(text):
@@ -40,54 +164,6 @@ def c_option_group(label, options):
             c_option(label, value)
             for label, value in options
         ]
-    }
-
-
-def c_confirm(title, text, confirm, deny='Cancel'):
-    return {
-        'title': c_ptext(title),
-        'text': c_text(text),
-        'confirm': c_ptext(confirm),
-        'deny': c_ptext(deny)
-    }
-
-
-def section(text, **kwargs):
-    return {'type': 'section',
-            'text': c_text(text),
-            **kwargs}
-
-
-def context(elements):
-    return {
-        'type': 'context',
-        'elements': elements
-    }
-
-
-def divider():
-    return {'type': 'divider'}
-
-
-def actions(elements, **kwargs):
-    return {'type': 'actions',
-            'elements': elements,
-            **kwargs}
-
-
-def b_image(image_url, alt_text, **kwargs):
-    """
-
-    Other Parameters
-    ----------------
-    title : text object
-    block_id : str
-    """
-    return {
-        'type': 'image',
-        'image_url': image_url,
-        'alt_text': alt_text,
-        **kwargs
     }
 
 
@@ -149,3 +225,35 @@ def e_static_select(action_id, placeholder=None,
 
     ele.update(kwargs)
     return ele
+
+
+    # -------------------------------------------------------------------------
+    # v_<item> - get value helpers
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def v_action_selected(action):
+        return action['selected_option']['value']
+
+    @staticmethod
+    def v_imsga_selected(action):
+        return action['actions'][0]['value']
+
+    @staticmethod
+    def v_action(action):
+        return {
+            'button':
+                lambda a: a.get('value') or a.get('action_id'),
+            'static_select':
+                lambda a: SlackResponse.v_action_selected(a),
+            'interactive_message':
+                lambda a: SlackResponse.v_imsga_selected(a)
+        }[action['type']](action)
+
+    @staticmethod
+    def v_first_option(options):
+        return options[0]['text']['text']
+
+    @staticmethod
+    def v_first_group_option(group_options):
+        return group_options[0]['options'][0]['text']['text']
