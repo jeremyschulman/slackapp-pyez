@@ -12,7 +12,10 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+import json
 from requests import Session
+from . import ux_blocks
+
 
 __all__ = ['SlackResponse']
 
@@ -27,11 +30,7 @@ class SlackResponse(dict):
         self['as_user'] = self.rqst.bot
         self.request = Session()
         self.request.headers["Content-Type"] = "application/json"
-        # v--- do not do this.
-        # self.request.headers['Authorization'] = 'Bearer {}'.format(self.client.token)
         self.request.verify = False
-
-
 
     # -------------------------------------------------------------------------
     # messaging methods
@@ -78,7 +77,7 @@ class SlackResponse(dict):
             If the call to the Slack API fails.
         """
         if vargs:
-            self['blocks'] = [self.b_section(vargs[0])]
+            self['blocks'] = [ux_blocks.section(vargs[0])]
 
         resp = self.request.post(self.rqst.response_url,
                                  json=dict(**self, **kwargs))
@@ -88,6 +87,7 @@ class SlackResponse(dict):
     # -------------------------------------------------------------------------
     # "on" registers
     # -------------------------------------------------------------------------
+    # TODO: v---- depreciate this use
 
     def on_action(self, key, func):
         self.app.register_block_action(key, func)
