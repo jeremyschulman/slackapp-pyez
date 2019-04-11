@@ -14,6 +14,10 @@
 
 DEFAULT_SELECT_PLACEHOLDER = 'select'
 
+# -------------------------------------------------------------------------
+# primary Block object definitions
+# -------------------------------------------------------------------------
+
 
 def section(text, **kwargs):
     """
@@ -132,7 +136,7 @@ def image(image_url, alt_text, **kwargs):
 
 
 # -------------------------------------------------------------------------
-# c_<item> - message composition object
+# Block message composition items begin with "c_"
 # -------------------------------------------------------------------------
 
 def c_confirm(title, text, confirm, deny='Cancel'):
@@ -168,7 +172,7 @@ def c_option_group(label, options):
 
 
 # -------------------------------------------------------------------------
-# e_<item> - block element definitions
+# Block element items begin with "e_"
 # -------------------------------------------------------------------------
 
 def e_button(text, action_id=None, value=None, **kwargs):
@@ -227,33 +231,68 @@ def e_static_select(action_id, placeholder=None,
     return ele
 
 
-    # -------------------------------------------------------------------------
-    # v_<item> - get value helpers
-    # -------------------------------------------------------------------------
+# -------------------------------------------------------------------------
+# v_<item> are used as "value" helpers to get data from the item.
+# -------------------------------------------------------------------------
 
-    @staticmethod
-    def v_action_selected(action):
-        return action['selected_option']['value']
+def v_action_selected(action):
+    """
+    Return the value from the selected "menu option select" element.
 
-    @staticmethod
-    def v_imsga_selected(action):
-        return action['actions'][0]['value']
+    Parameters
+    ----------
+    action : dict
 
-    @staticmethod
-    def v_action(action):
-        return {
-            'button':
-                lambda a: a.get('value') or a.get('action_id'),
-            'static_select':
-                lambda a: SlackResponse.v_action_selected(a),
-            'interactive_message':
-                lambda a: SlackResponse.v_imsga_selected(a)
-        }[action['type']](action)
+    Returns
+    -------
+    str
+        The value that was selected by the User
+    """
+    return action['selected_option']['value']
 
-    @staticmethod
-    def v_first_option(options):
-        return options[0]['text']['text']
 
-    @staticmethod
-    def v_first_group_option(group_options):
-        return group_options[0]['options'][0]['text']['text']
+def v_action(action):
+    return {
+        'button':
+            lambda a: a.get('value') or a.get('action_id'),
+        'static_select':
+            lambda a: v_action_selected(a),
+    }[action['type']](action)
+
+
+def v_first_option(options):
+    """
+    Return the first value in a menu-select options structure.  This is useful when
+    you create an options structure and you want the first item as the placeholder or
+    the default selected value.
+
+    Parameters
+    ----------
+    options : list
+        The menu select option list
+
+    Returns
+    -------
+    str
+        The text of the first option
+    """
+    return options[0]['text']['text']
+
+
+def v_first_group_option(group_options):
+    """
+    Returns the first value in a menu-select that uses option_groups. This is
+    useful when you create an options structure and you want the first item as
+    the placeholder or the default selected value.
+
+    Parameters
+    ----------
+    group_options : list
+        The this of group options
+
+    Returns
+    -------
+    str
+        The text of the first option
+    """
+    return group_options[0]['options'][0]['text']['text']
