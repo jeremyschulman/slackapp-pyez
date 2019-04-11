@@ -175,21 +175,50 @@ def c_option_group(label, options):
 # Block element items begin with "e_"
 # -------------------------------------------------------------------------
 
-def e_button(text, action_id=None, value=None, **kwargs):
+def e_button(text, action_id, value, **kwargs):
+    """
+    Create a block action Button element.
+
+    Notes
+    -----
+    API: https://api.slack.com/reference/messaging/block-elements#button
+
+    Parameters
+    ----------
+    text : str
+    action_id : str
+    value : str (optional)
+
+    Other Parameters
+    ----------------
+    url : str - will open User browser to this link
+    confirm : c_confirm - will cause a confirmation dialog
+
+    Returns
+    -------
+
+    """
     return {
-        'type': 'button',
-        'text': c_ptext(text),
-        'action_id': action_id or text,
-        'value': value or text,
+        'type': 'button', 'text': c_ptext(text),
+        'action_id': action_id, 'value': value,
         **kwargs}
 
 
 def e_image(image_url, alt_text):
-    return {
-        'type': 'image',
-        'image_url': image_url,
-        'alt_text': alt_text
-    }
+    """
+    Create a block Image element that can be used as a section accessory; not
+    to be confused with an action "Image" block (see `func`:image above) for that.
+
+    Parameters
+    ----------
+    image_url : str
+    alt_text : str
+
+    Returns
+    -------
+    dict
+    """
+    return {'type': 'image', 'image_url': image_url, 'alt_text': alt_text}
 
 
 def e_static_select(action_id, placeholder=None,
@@ -197,17 +226,23 @@ def e_static_select(action_id, placeholder=None,
                     **kwargs):
     """
     This helper creates the "menu option select" message element dictionary.
+    This can be used with a `section` block.
+
+    Notes
+    -----
+    API: https://api.slack.com/reference/messaging/block-elements#select
 
     Parameters
     ----------
-    action_id
-    placeholder
-    options
-    option_groups
-    kwargs
+    action_id : str
+    placeholder : c_ptext
+    options : list
+    option_groups : list
 
     Other Parameters
     ----------------
+    initial_option : str
+    confirm : c_confirm
 
     Returns
     -------
@@ -268,7 +303,7 @@ def v_first_option(options):
 
     Parameters
     ----------
-    options : list
+    options : list[dict]
         The menu select option list
 
     Returns
@@ -287,7 +322,7 @@ def v_first_group_option(group_options):
 
     Parameters
     ----------
-    group_options : list
+    group_options : list[dict]
         The this of group options
 
     Returns
