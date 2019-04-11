@@ -106,7 +106,8 @@ class SlackAppSessionInterface(SessionInterface):
         elif request.json:
             if 'event' in request.json:
                 rqst_type = 'event'
-                sid = request.json['event']['user']
+                event_data = request.json['event']
+                sid = event_data.get('user') or event_data['channel']
             elif 'type' in request.json:
                 return PickleCookieSession(self, request, app)
             else:

@@ -12,6 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from first import first
 import json
 from flask import session
 
@@ -54,7 +55,12 @@ class SlackRequest(object):
         else:
             raise RuntimeError("What is this request?")
 
-        chan_config = app.config.channels[self.channel]
+        if self.channel not in app.config.channels:
+            # then this must be in the BOT channel
+            chan_config = app.config.channels[first(app.config.channels)]
+        else:
+            chan_config = app.config.channels[self.channel]
+
         token = chan_config.get('bot_oauth_token')
         self.bot = bool(token)
         if not self.bot:
