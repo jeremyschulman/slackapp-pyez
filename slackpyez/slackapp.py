@@ -17,6 +17,8 @@ import json
 from pathlib import Path
 import toml
 
+import pyee
+
 from slackpyez.callback_handler import CallbackHandler
 from slackpyez.request import SlackRequest
 from slackpyez.log import create_logger

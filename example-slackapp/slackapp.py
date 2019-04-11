@@ -14,7 +14,7 @@
 
 from flask import request
 from blueprint import blueprint
-from slackpyez.slack import SlackApp
+from slackpyez.slackapp import SlackApp
 
 slackapp = SlackApp()
 

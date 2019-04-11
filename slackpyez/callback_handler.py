@@ -12,11 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from collections import Callable
+from collections import Callable, UserDict
 from operator import itemgetter
+import pyee
 
 
-class CallbackHandler(dict):
+class CallbackHandler(UserDict):
 
     def __init__(self, key):
         super(CallbackHandler, self).__init__()
