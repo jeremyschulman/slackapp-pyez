@@ -65,7 +65,7 @@ class SlackApp(object):
 
         self.on_block_actions = CallbackHandler('block_id')
         self.on_dialog_submit = CallbackHandler('callback_id')
-        self.on_imsg = CallbackHandler('callback_id')
+        self.on_imsg_action = CallbackHandler('callback_id')
 
         self.on_payload_type = CallbackHandler('type')
 
@@ -104,7 +104,7 @@ class SlackApp(object):
         return callback(rqst, rqst.payload['submission'])
 
     def _handle_imsg(self, rqst):
-        callback = self.on_imsg.callback_for(rqst.payload)
+        callback = self.on_imsg_action.callback_for(rqst.payload)
         return callback(rqst, rqst.payload['actions'][0])
 
     def handle_request(self, form_data):
