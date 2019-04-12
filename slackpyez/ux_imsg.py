@@ -12,8 +12,58 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+# -------------------------------------------------------------------------
+# The following are the main action items
+# -------------------------------------------------------------------------
+
+
+def field(title, value, short=True):
+    """
+    Creates an Interactive message attachment field item.  The caller
+    can create a list of these in the attachment.
+
+    Notes
+    -----
+    API: https://api.slack.com/docs/message-buttons
+
+    Parameters
+    ----------
+    title : str - The field title, User sees
+    value : str - The field value, User sees
+    short : bool - format in UX short mode, optional
+
+    Returns
+    -------
+    dict
+    """
+    return dict(title=title, value=value, short=short)
+
+
+# -------------------------------------------------------------------------
+# The following are the main action items
+# -------------------------------------------------------------------------
+
 
 def select(text, action_id, options=None, option_groups=None):
+    """
+    Create a static selection menu item.
+
+    Notes
+    -----
+    API: https://api.slack.com/docs/message-menus
+
+    Parameters
+    ----------
+    text : str - what the User sees
+    action_id : str - the value to identify this item in the attachment
+    options : list[i_option] - list of option values
+    option_groups : list[i_option_group] - list of option group values
+
+    Returns
+    -------
+    dict
+    """
+
     select_data = dict(
         type='select',
         name=action_id,
@@ -30,8 +80,31 @@ def select(text, action_id, options=None, option_groups=None):
     return select_data
 
 
-def field(title, value, short=True):
-    return dict(title=title, value=value, short=short)
+def button(text, name=None, value=None, style='default'):
+    """
+    Create an Interactive attachment button.
+
+    Notes
+    -----
+    API: https://api.slack.com/docs/message-buttons
+
+    Parameters
+    ----------
+    text : str - the button text the User will see
+    name : str - the button name/ID value, optional, defaults to text
+    value : str - the value assigned to button, optional.  defaults to name | text
+    style : str
+        The button style, optional default to 'default'.  Other values are:
+        * 'primary' - will show green
+        * 'danger' - will show red.
+
+    Returns
+    -------
+    dict
+    """
+    return dict(type='button', text=text,
+                name=name or text,value=value or name or text,
+                style=style)
 
 
 def i_option(text, value):
@@ -45,7 +118,24 @@ def i_option_group(group, options):
     ])
 
 
+# -------------------------------------------------------------------------
+# Value helpers
+# -------------------------------------------------------------------------
+
 def v_action(action_data):
+    """
+    Returns a tuple (item_id, item_value) based on the type of action
+    that the User interacted with.
+
+    Parameters
+    ----------
+    action_data : dict
+        The action data element
+
+    Returns
+    -------
+    tuple
+    """
     return {
         'button':
             lambda: (action_data['name'], action_data['value']),
