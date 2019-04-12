@@ -47,7 +47,6 @@ class SlackRequest(object):
             self.ts = self.event['ts']
 
         elif session['payload']:
-            # rqst_type == the payload['type'] value in this case
             self.payload = session['payload']
             self.channel = self.payload['channel']['id']
             self.user_name = self.payload['user']['name']
@@ -66,10 +65,15 @@ class SlackRequest(object):
             raise SlackAppError("Unable to execute the request in this channel", 401, self)
 
         chan_config = app.config.channels[self.channel]
-        token = chan_config.get('bot_oauth_token')
-        self.bot = bool(token)
-        if not self.bot:
-            token = chan_config['oauth_token']
+
+        # hardcoding v--- for testing
+        token = chan_config['oauth_token']
+        self.bot = False
+
+        # token = chan_config.get('bot_oauth_token')
+        # self.bot = bool(token)
+        # if not self.bot:
+        #     token = chan_config['oauth_token']
 
         self.client = SlackClient(token=token)
 
@@ -81,3 +85,9 @@ class SlackRequest(object):
 
     def response(self):
         return SlackResponse(rqst=self)
+
+
+    def get_user_im_chan(self):
+        self.app.client.api_call(
+            "chat.postEphemeral", user=self.rqst.user_id,
+            channel=self.rqst.channel, **self, **kwargs)

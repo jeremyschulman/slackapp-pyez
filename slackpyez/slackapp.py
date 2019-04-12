@@ -15,11 +15,12 @@
 import os
 import json
 from pathlib import Path
+from collections import UserDict
+
 import toml
-
+from first import first
 import pyee
-
-from collections import MutableMapping, UserDict
+from slackclient import SlackClient
 
 from slackpyez.request import SlackRequest
 from slackpyez.log import create_logger
@@ -65,6 +66,10 @@ class SlackAppConfig(UserDict):
         }
 
 
+def get_user_dmc_list(client):
+    resp = client.api_call("conversations.list", type='im')
+
+
 class SlackApp(object):
 
     def __init__(self):
@@ -90,6 +95,15 @@ class SlackApp(object):
 
     def request(self, rqst_form):
         return SlackRequest(app=self, rqst_data=rqst_form)
+
+    def create_client(self, channel=None, chan_id=None, as_bot=False):
+        chan_id = (chan_id or (
+            self.config['SLACK_CHANNEL_NAME_TO_ID'][channel] if channel
+            else first(self.config.channels)))
+
+        chan_cfg = self.config.channels[chan_id]
+        token = chan_cfg['oauth_token' if not as_bot else 'bot_oauth_token']
+        return SlackClient(token=token)
 
     # -------------------------------------------------------------------------
     # request handlers - per payload
