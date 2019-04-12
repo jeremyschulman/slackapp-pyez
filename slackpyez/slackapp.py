@@ -50,24 +50,25 @@ class SlackAppConfig(UserDict):
             raise RuntimeError(f'The environment variable {envar} is set to '
                                f'{conf_file}, but this file does not exist')
 
-        self.data = toml.load(conf_file_p)
+        # store the config file data into the object as dict
+
+        self.update(toml.load(conf_file_p))
+
+        # create a specific `channels` attribute that is a dict of channel ID to
+        # channel config.
 
         self.channels = {_chan['id']: _chan
-                         for _chan in self.data['channel']}
+                         for _chan in self['channel']}
 
         self['ALL_SLACK_VERIFY_TOKENS'] = [
             _chan['verify_token']
-            for _chan in self.data['channel']
+            for _chan in self['channel']
         ]
 
         self['SLACK_CHANNEL_NAME_TO_ID'] = {
             _chan['name']: _chan['id']
-            for _chan in self.data['channel']
+            for _chan in self['channel']
         }
-
-
-def get_user_dmc_list(client):
-    resp = client.api_call("conversations.list", type='im')
 
 
 class SlackApp(object):
@@ -140,6 +141,11 @@ class SlackApp(object):
         event = rqst.payload['callback_id']
         action = rqst.payload['actions'][0]
         action_id, action_value = ux.IMSG.v_action(action)
-        callback = self.ux_imsg.listeners(event)[0]
+        try:
+            callback = self.ux_imsg.listeners(event)[0]
+        except IndexError:
+            import pdb
+            pdb.set_trace()
+            raise RuntimeError(f"no IMSG callback for event '{event}'.")
 
         return callback(rqst, action, action_id, action_value)
