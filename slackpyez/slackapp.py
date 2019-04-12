@@ -19,17 +19,22 @@ import toml
 
 import pyee
 
+from collections import MutableMapping, UserDict
+
 from slackpyez.request import SlackRequest
 from slackpyez.log import create_logger
 from slackpyez.sessions import SlackAppSessionInterface
 from slackpyez import ux
 
 
-class SlackAppConfig(dict):
+__all__ = ['SlackApp', 'SlackAppConfig']
+
+
+class SlackAppConfig(UserDict):
+
     def __init__(self):
         super(SlackAppConfig, self).__init__()
         self.channels = None
-        self.data = None
 
     def from_envar(self, envar):
         conf_file = os.environ.get(envar)
@@ -124,4 +129,3 @@ class SlackApp(object):
         callback = self.ux_imsg.listeners(event)[0]
 
         return callback(rqst, action, action_id, action_value)
-

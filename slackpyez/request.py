@@ -12,13 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from first import first
+
 import json
 from flask import session
 
 from slackpyez.dialog import SlackDialog
 from slackclient import SlackClient
 from slackpyez.response import SlackResponse
+from slackpyez.exc import SlackAppError
+
+__all__ = ['SlackRequest']
 
 
 class SlackRequest(object):
@@ -57,10 +60,12 @@ class SlackRequest(object):
 
         if self.channel not in app.config.channels:
             # then this must be in the BOT channel
-            chan_config = app.config.channels[first(app.config.channels)]
-        else:
-            chan_config = app.config.channels[self.channel]
+            # chan_config = app.config.channels[first(app.config.channels)]
+            msg = "Unable to execute the request in this channel."
+            app.log.error(msg)
+            raise SlackAppError("Unable to execute the request in this channel", 401, self)
 
+        chan_config = app.config.channels[self.channel]
         token = chan_config.get('bot_oauth_token')
         self.bot = bool(token)
         if not self.bot:

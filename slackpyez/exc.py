@@ -12,5 +12,7 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from slackpyez.slackapp import SlackApp
-from slackpyez.exc import *
+
+class SlackAppError(Exception):
+    def __init__(self, *vargs):
+        super(SlackAppError, self).__init__(*vargs)
