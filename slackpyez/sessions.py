@@ -22,6 +22,7 @@ Some of this code was inspired from: http://flask.pocoo.org/snippets/132/
 import os
 from pathlib import Path
 from contextlib import suppress
+from collections import UserDict
 
 import json
 import pickle
@@ -31,7 +32,7 @@ from flask.sessions import SessionInterface, SessionMixin
 __all__ = ['SlackAppSessionInterface']
 
 
-class PickleSession(dict, SessionMixin):
+class PickleSession(UserDict, SessionMixin):
 
     def __init__(self, session_if, sid):
         super(PickleSession, self).__init__()
@@ -43,13 +44,13 @@ class PickleSession(dict, SessionMixin):
     def read(self):
         try:
             pdata = pickle.load(self.path.open('rb'))
-            dict.update(self, pdata)
+            self.update(pdata)
         except (FileNotFoundError, ValueError, EOFError, pickle.UnpicklingError):
             pass
 
     def save(self, *vargs, **kwargs):
         with self.path.open('wb') as ofile:
-            pickle.dump(dict.copy(self), ofile)
+            pickle.dump(self.copy(), ofile)
 
 
 class PickleSlackSession(PickleSession):
@@ -105,7 +106,8 @@ class SlackAppSessionInterface(SessionInterface):
         elif request.json:
             if 'event' in request.json:
                 rqst_type = 'event'
-                sid = request.json['event']['user']
+                event_data = request.json['event']
+                sid = event_data.get('user') or event_data['channel']
             elif 'type' in request.json:
                 return PickleCookieSession(self, request, app)
             else:

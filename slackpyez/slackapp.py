@@ -15,19 +15,27 @@
 import os
 import json
 from pathlib import Path
-import toml
+from collections import UserDict
 
-from slackpyez.callback_handler import CallbackHandler
+import toml
+from first import first
+import pyee
+from slackclient import SlackClient
+
 from slackpyez.request import SlackRequest
 from slackpyez.log import create_logger
 from slackpyez.sessions import SlackAppSessionInterface
+from slackpyez import ux
 
 
-class SlackAppConfig(dict):
+__all__ = ['SlackApp', 'SlackAppConfig']
+
+
+class SlackAppConfig(UserDict):
+
     def __init__(self):
         super(SlackAppConfig, self).__init__()
         self.channels = None
-        self.data = None
 
     def from_envar(self, envar):
         conf_file = os.environ.get(envar)
@@ -58,59 +66,80 @@ class SlackAppConfig(dict):
         }
 
 
+def get_user_dmc_list(client):
+    resp = client.api_call("conversations.list", type='im')
+
+
 class SlackApp(object):
 
     def __init__(self):
         self.log = create_logger()
 
-        self.on_block_actions = CallbackHandler('block_id')
-        self.on_dialog_submit = CallbackHandler('callback_id')
-        self.on_imsg_action = CallbackHandler('callback_id')
+        self.ux_block = pyee.EventEmitter()
+        self.ux_dialog = pyee.EventEmitter()
+        self.ux_imsg = pyee.EventEmitter()
 
-        self.on_payload_type = CallbackHandler('type')
+        self._in_msg = pyee.EventEmitter()
+
+        self._in_msg.on('block_actions', self._handle_block_actions)
+        self._in_msg.on('dialog_submission', self._handle_dialog_submit)
+        self._in_msg.on('interactive_message', self._handle_imsg)
 
         self.config = SlackAppConfig()
 
         # setup the default handler functions
 
-        self.on_payload_type['block_actions'] = self._handle_block_actions
-        self.on_payload_type['dialog_submission'] = self._handle_dialog_submit
-        self.on_payload_type['interactive_message'] = self._handle_imsg
-
     @staticmethod
     def register_app(flaskapp, sessiondb_path):
         flaskapp.session_interface = SlackAppSessionInterface(sessiondb_path)
 
-    def register_block_action(self, key, func):
-        self.on_block_actions[key] = func
-
-    def register_dialog_submit(self, callback_id, func):
-        self.on_dialog_submit[callback_id] = func
-
     def request(self, rqst_form):
         return SlackRequest(app=self, rqst_data=rqst_form)
 
+    def create_client(self, channel=None, chan_id=None, as_bot=False):
+        chan_id = (chan_id or (
+            self.config['SLACK_CHANNEL_NAME_TO_ID'][channel] if channel
+            else first(self.config.channels)))
+
+        chan_cfg = self.config.channels[chan_id]
+        token = chan_cfg['oauth_token' if not as_bot else 'bot_oauth_token']
+        return SlackClient(token=token)
+
     # -------------------------------------------------------------------------
-    # request handlers
+    # request handlers - per payload
     # -------------------------------------------------------------------------
-
-    def _handle_block_actions(self, rqst):
-        action = rqst.payload['actions'][0]
-        callback = self.on_block_actions.callback_for(action)
-        return callback(rqst, action)
-
-    def _handle_dialog_submit(self, rqst):
-        callback = self.on_dialog_submit.callback_for(rqst.payload)
-        return callback(rqst, rqst.payload['submission'])
-
-    def _handle_imsg(self, rqst):
-        callback = self.on_imsg_action.callback_for(rqst.payload)
-        return callback(rqst, rqst.payload['actions'][0])
 
     def handle_request(self, form_data):
         rqst = self.request(form_data)
 
         self.log.info("PAYLOAD>> {}\n".format(json.dumps(rqst.payload, indent=3)))
-
-        callback = self.on_payload_type.callback_for(rqst.payload)
+        p_type = rqst.payload['type']
+        callback = self._in_msg.listeners(p_type)[0]
         return callback(rqst)
+
+    # -------------------------------------------------------------------------
+    # PRIVATE request handlers - per payload type
+    # -------------------------------------------------------------------------
+
+    def _handle_block_actions(self, rqst):
+        action = rqst.payload['actions'][0]
+        value = ux.BLOCKS.v_action(action)
+        event = action['block_id']
+        callback = self.ux_block.listeners(event)[0]
+
+        return callback(rqst, action, value)
+
+    def _handle_dialog_submit(self, rqst):
+        event = rqst.payload['callback_id']
+        submission = rqst.payload['submission']
+        callback = self.ux_dialog.listeners(event)[0]
+
+        return callback(rqst, submission)
+
+    def _handle_imsg(self, rqst):
+        event = rqst.payload['callback_id']
+        action = rqst.payload['actions'][0]
+        action_id, action_value = ux.IMSG.v_action(action)
+        callback = self.ux_imsg.listeners(event)[0]
+
+        return callback(rqst, action, action_id, action_value)

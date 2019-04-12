@@ -12,12 +12,16 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+
 import json
 from flask import session
 
 from slackpyez.dialog import SlackDialog
 from slackclient import SlackClient
 from slackpyez.response import SlackResponse
+from slackpyez.exc import SlackAppError
+
+__all__ = ['SlackRequest']
 
 
 class SlackRequest(object):
@@ -43,7 +47,6 @@ class SlackRequest(object):
             self.ts = self.event['ts']
 
         elif session['payload']:
-            # rqst_type == the payload['type'] value in this case
             self.payload = session['payload']
             self.channel = self.payload['channel']['id']
             self.user_name = self.payload['user']['name']
@@ -54,11 +57,23 @@ class SlackRequest(object):
         else:
             raise RuntimeError("What is this request?")
 
+        if self.channel not in app.config.channels:
+            # then this must be in the BOT channel
+            # chan_config = app.config.channels[first(app.config.channels)]
+            msg = "Unable to execute the request in this channel."
+            app.log.error(msg)
+            raise SlackAppError("Unable to execute the request in this channel", 401, self)
+
         chan_config = app.config.channels[self.channel]
-        token = chan_config.get('bot_oauth_token')
-        self.bot = bool(token)
-        if not self.bot:
-            token = chan_config['oauth_token']
+
+        # hardcoding v--- for testing
+        token = chan_config['oauth_token']
+        self.bot = False
+
+        # token = chan_config.get('bot_oauth_token')
+        # self.bot = bool(token)
+        # if not self.bot:
+        #     token = chan_config['oauth_token']
 
         self.client = SlackClient(token=token)
 
@@ -70,3 +85,9 @@ class SlackRequest(object):
 
     def response(self):
         return SlackResponse(rqst=self)
+
+
+    def get_user_im_chan(self):
+        self.app.client.api_call(
+            "chat.postEphemeral", user=self.rqst.user_id,
+            channel=self.rqst.channel, **self, **kwargs)

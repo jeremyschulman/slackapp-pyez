@@ -1,3 +1,4 @@
+pyee
 slackclient
 requests
 toml

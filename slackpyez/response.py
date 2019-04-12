@@ -36,6 +36,13 @@ class SlackResponse(dict):
     # messaging methods
     # -------------------------------------------------------------------------
 
+    def send_dm(self, channel=None, **kwargs):
+        resp = self.client.api_call("chat.postMessage",
+                                    channel=channel,
+                                    **self, **kwargs)
+
+        self.validate_api_response(resp)
+
     def send_public(self, **kwargs):
         resp = self.client.api_call("chat.postMessage",
                                     channel=self.rqst.channel,
