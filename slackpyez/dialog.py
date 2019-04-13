@@ -41,10 +41,8 @@ class SlackDialog(UserDict):
         if not self.callback_id:
             raise RuntimeError("Missing required callback_id")
 
-        resp = self.client.api_call(
+        return SlackApiResponse(self.rqst, self.client.api_call(
             "dialog.open",
-            trigger_id=self.trigger_id,
-            callback_id=self.callback_id,
-            **self, **kwargs)
-
-        return SlackApiResponse(rqst=self, resp=resp)
+            trigger_id=self.trigger_id, 
+            dialog=dict(callback_id=self.callback_id, **self, **kwargs)
+        ))

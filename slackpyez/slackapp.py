@@ -148,8 +148,11 @@ class SlackApp(object):
         return callback(rqst, action)
 
     def error(self, exc):
+        import pdb
+        pdb.set_trace()
+
         if exc.args:
             self.log.error("SlackApp ERROR>>\n{}\n".format(
-                json.dumps(exc.args)))
+                json.dumps(exc.args[1])))
 
         raise exc
