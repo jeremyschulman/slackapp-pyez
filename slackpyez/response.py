@@ -12,12 +12,11 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import json
 from requests import Session
 from collections import UserDict
 
-from slackpyez.exc import SlackAppApiError
-from slackpyez import ux_blocks
+from slackpyez import ui_blocks
+from slackpyez.slackapi import SlackApiResponse, SlackApiPostResponse
 
 
 __all__ = ['SlackResponse']
@@ -41,7 +40,7 @@ class SlackResponse(UserDict):
 
     def wrap_text(self, text):
         blocks = self.get('blocks') or []
-        blocks.insert(0, ux_blocks.section(text))
+        blocks.insert(0, ui_blocks.section(text))
         self['blocks'] = blocks
 
     def send_public(self, text=None, **kwargs):
@@ -66,7 +65,7 @@ class SlackResponse(UserDict):
                                     channel=self.rqst.channel,
                                     **self, **kwargs)
 
-        self.validate_api_response(resp)
+        return SlackApiResponse(self, resp)
 
     def send_ephemeral(self, text=None, user_id=None, **kwargs):
         """
@@ -78,7 +77,12 @@ class SlackResponse(UserDict):
 
         Parameters
         ----------
-        user_id : str (optional) - The user to receive the ephMsg
+        text : str (optional)
+            If provided this text will be added as the first block in the
+            message.
+
+        user_id : str (optional)
+            The user to receive the ephMsg
 
         Other Parameters
         ----------------
@@ -98,7 +102,7 @@ class SlackResponse(UserDict):
                                         channel=self.rqst.channel,
                                         **self, **kwargs)
 
-        self.validate_api_response(api_resp)
+        return SlackApiResponse(self, api_resp)
 
     def send(self, text=None, **kwargs):
         """
@@ -132,21 +136,12 @@ class SlackResponse(UserDict):
 
         resp = self.request.post(self.rqst.response_url,
                                  json=dict(**self, **kwargs))
-        if not resp.ok:
-            raise RuntimeError(f"Unable to send response: {resp.text}", resp)
+
+        return SlackApiPostResponse(self, resp)
 
     def send_dm(self, channel, **kwargs):
         resp = self.client.api_call("chat.postMessage",
                                     channel=channel,
                                     **self, **kwargs)
 
-        self.validate_api_response(resp)
-
-    @staticmethod
-    def validate_api_response(api_resp):
-        if api_resp.get("ok"):
-            return
-
-        raise SlackAppApiError(
-            "Slack API response >>\n{}\n".format(json.dumps(api_resp, indent=3)),
-            api_resp)
+        return SlackApiResponse(self, resp)

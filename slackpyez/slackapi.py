@@ -12,5 +12,27 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from . import ux_imsg as IMSG
-from . import ux_blocks as BLOCKS
+from . import exc
+
+
+class SlackApiResponse(object):
+    def __init__(self, rqst, resp):
+        self.rqst = rqst
+        self.app = rqst.app
+        self.resp = resp
+
+    @property
+    def ok(self):
+        return self.resp.get('ok', False) is True
+
+    def raise_for_status(self):
+        if self.ok:
+            return
+
+        self.app.error(exc.SlackAppApiError(self))
+
+
+class SlackApiPostResponse(SlackApiResponse):
+    @property
+    def ok(self):
+        return self.resp.ok

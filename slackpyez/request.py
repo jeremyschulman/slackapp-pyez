@@ -81,8 +81,8 @@ class SlackRequest(object):
     def delete(self):
         self.response().send(delete_original=True, replace_original=True)
 
-    def dialog(self, **kwargs):
-        return SlackDialog(rqst=self, **kwargs)
+    def dialog(self):
+        return SlackDialog(rqst=self)
 
     def response(self):
         return SlackResponse(rqst=self)
