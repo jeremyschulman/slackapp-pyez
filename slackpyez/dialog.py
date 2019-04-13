@@ -15,7 +15,7 @@
 from collections import UserDict
 
 
-from slackpyez import ux_dialog
+from slackpyez import ui_dialog
 from slackpyez.slackapi import SlackApiResponse
 
 
@@ -28,7 +28,7 @@ class SlackDialog(UserDict):
         self.client = rqst.client
 
         self.trigger_id = rqst.trigger_id
-        self.ux = ux_dialog
+        self.UI = ui_dialog
         self.callback_id = None
 
     def on(self, callback_id, func):
@@ -43,6 +43,6 @@ class SlackDialog(UserDict):
 
         return SlackApiResponse(self.rqst, self.client.api_call(
             "dialog.open",
-            trigger_id=self.trigger_id, 
+            trigger_id=self.trigger_id,
             dialog=dict(callback_id=self.callback_id, **self, **kwargs)
         ))

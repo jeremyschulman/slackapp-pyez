@@ -12,6 +12,6 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-from . import ux_imsg as IMSG
-from . import ux_blocks as BLOCKS
-from . import ux_dialog as DIALOG
+from . import ui_imsg as IMSG
+from . import ui_blocks as BLOCKS
+from . import ui_dialog as DIALOG

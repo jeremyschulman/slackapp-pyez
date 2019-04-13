@@ -25,7 +25,7 @@ from slackclient import SlackClient
 from slackpyez.request import SlackRequest
 from slackpyez.log import create_logger
 from slackpyez.sessions import SlackAppSessionInterface
-from slackpyez import ux, exc
+from slackpyez import ui, exc
 
 
 __all__ = ['SlackApp', 'SlackAppConfig']
@@ -125,7 +125,7 @@ class SlackApp(object):
 
     def _handle_block_actions(self, rqst):
         action = rqst.payload['actions'][0]
-        value = ux.BLOCKS.v_action(action)
+        value = ui.BLOCKS.v_action(action)
         event = action['block_id']
         callback = self.ux_block.listeners(event)[0]
 
@@ -141,10 +141,10 @@ class SlackApp(object):
     def _handle_imsg(self, rqst):
         event = rqst.payload['callback_id']
         action_data = rqst.payload['actions'][0]
-        action_id, action_value = ux.IMSG.v_action(action_data)
+        action_id, action_value = ui.IMSG.v_action(action_data)
         callback = self.ux_imsg.listeners(event)[0]
 
-        action = ux.IMSG.SlackOnImsgAction(action_data, action_id, action_value)
+        action = ui.IMSG.SlackOnImsgAction(action_data, action_id, action_value)
         return callback(rqst, action)
 
     def error(self, exc):

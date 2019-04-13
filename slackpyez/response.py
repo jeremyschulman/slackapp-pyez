@@ -15,7 +15,7 @@
 from requests import Session
 from collections import UserDict
 
-from slackpyez import ux_blocks
+from slackpyez import ui_blocks
 from slackpyez.slackapi import SlackApiResponse, SlackApiPostResponse
 
 
@@ -40,7 +40,7 @@ class SlackResponse(UserDict):
 
     def wrap_text(self, text):
         blocks = self.get('blocks') or []
-        blocks.insert(0, ux_blocks.section(text))
+        blocks.insert(0, ui_blocks.section(text))
         self['blocks'] = blocks
 
     def send_public(self, text=None, **kwargs):

@@ -171,6 +171,49 @@ def select(label, name, options=None, option_groups=None, **kwargs):
             **kwargs}
 
 
+def errors(name=None, err_msg=None, err_list=None):
+    """
+    This function will return a Dialog errors dictionary that can be returned to Slack,
+    and as a result the User will see error notifications on the dialog they are working
+    in.
+
+    The caller can use this function in one of two ways:
+        (1) "single error message", provide BOTH the `name` and `err_msg` value
+        (2) "multiple errors, provide the `err_list`
+
+    Parameters
+    ----------
+    name : str
+        Identifies the Dialog element in the dialog.
+
+    err_msg :
+        The error message the User will see.
+
+    err_list : list[tuple]
+        A list of (name,err-msg)
+
+    Returns
+    -------
+    dict
+    """
+    if name and err_msg:
+        return dict(errors=[dict(name=name, error=err_msg)])
+    elif err_list:
+        return dict(errors=[
+            dict(name=name, error=errmsg)
+            for name, errmsg in err_list
+        ])
+    else:
+        RuntimeError('Missing name+message or err_list')
+
+
+# =============================================================================
+#
+#                   Dialog element items and helpers
+#
+# =============================================================================
+
+
 def i_option(label, value):
     """
     Create an "option item" used by the select `options` field.
@@ -207,6 +250,5 @@ def i_option_group(label, options):
     -------
     dict
     """
-    return dict(
-        label=label,
-        options=[i_option(o_t, o_v) for o_t, o_v in options])
+    return dict(label=label, options=[i_option(o_t, o_v)
+                                      for o_t, o_v in options])
