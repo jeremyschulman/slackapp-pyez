@@ -12,7 +12,19 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+"""
+This file contains the Slack API UX components for Interactive Messages.
+
+Notes
+-----
+API: https://api.slack.com/docs/message-guidelines
+"""
+
+
 from collections import namedtuple
+
+# The SlackOnImsgAction object is passed to the receiving handler when an action
+# is received by the SlackApp
 
 SlackOnImsgAction = namedtuple(
     "SlackOnImsgAction",
