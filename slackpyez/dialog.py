@@ -12,29 +12,39 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
-import json
+from collections import UserDict
 
 
-class SlackDialog(dict):
+from slackpyez import ux_dialog
+from slackpyez.slackapi import SlackApiResponse
 
-    def __init__(self, rqst, callback_id, on_submit, **_kwargs):
+
+class SlackDialog(UserDict):
+
+    def __init__(self, rqst):
         super(SlackDialog, self).__init__()
         self.rqst = rqst
+        self.app = rqst.app
         self.client = rqst.client
-        self.callback_id = callback_id
-        self._on_submit_func = None
-        self.on_submit = on_submit
-        self['state'] = rqst.state
+
         self.trigger_id = rqst.trigger_id
+        self.ux = ux_dialog
+        self.callback_id = None
 
-
+    def on(self, callback_id, func):
+        self.callback_id = callback_id
+        self.app.ux_dialog.on(callback_id, func)
 
     def send(self, **kwargs):
+        # self['state'] = json.dumps(self['state'])
 
-        self['state'] = json.dumps(self['state'])
-        dialog = dict(callback_id=self.callback_id, **self, **kwargs)
+        if not self.callback_id:
+            raise RuntimeError("Missing required callback_id")
 
         resp = self.client.api_call(
-            "dialog.open", trigger_id=self.trigger_id, dialog=dialog)
+            "dialog.open",
+            trigger_id=self.trigger_id,
+            callback_id=self.callback_id,
+            **self, **kwargs)
 
-        self.rqst.app.validate_api_response(resp)
+        return SlackApiResponse(rqst=self, resp=resp)

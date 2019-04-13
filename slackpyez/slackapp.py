@@ -25,7 +25,7 @@ from slackclient import SlackClient
 from slackpyez.request import SlackRequest
 from slackpyez.log import create_logger
 from slackpyez.sessions import SlackAppSessionInterface
-from slackpyez import ux
+from slackpyez import ux, exc
 
 
 __all__ = ['SlackApp', 'SlackAppConfig']
@@ -146,3 +146,10 @@ class SlackApp(object):
 
         action = ux.IMSG.SlackOnImsgAction(action_data, action_id, action_value)
         return callback(rqst, action)
+
+    def error(self, exc):
+        if exc.args:
+            self.log.error("SlackApp ERROR>>\n{}\n".format(
+                json.dumps(exc.args)))
+
+        raise exc
