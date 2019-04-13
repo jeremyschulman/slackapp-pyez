@@ -116,6 +116,7 @@ class SlackApp(object):
         self.log.info("PAYLOAD>> {}\n".format(json.dumps(rqst.payload, indent=3)))
         p_type = rqst.payload['type']
         callback = self._in_msg.listeners(p_type)[0]
+
         return callback(rqst)
 
     # -------------------------------------------------------------------------
@@ -139,13 +140,9 @@ class SlackApp(object):
 
     def _handle_imsg(self, rqst):
         event = rqst.payload['callback_id']
-        action = rqst.payload['actions'][0]
-        action_id, action_value = ux.IMSG.v_action(action)
-        try:
-            callback = self.ux_imsg.listeners(event)[0]
-        except IndexError:
-            import pdb
-            pdb.set_trace()
-            raise RuntimeError(f"no IMSG callback for event '{event}'.")
+        action_data = rqst.payload['actions'][0]
+        action_id, action_value = ux.IMSG.v_action(action_data)
+        callback = self.ux_imsg.listeners(event)[0]
 
-        return callback(rqst, action, action_id, action_value)
+        action = ux.IMSG.SlackOnImsgAction(action_data, action_id, action_value)
+        return callback(rqst, action)

@@ -12,6 +12,12 @@
 #  See the License for the specific language governing permissions and
 #  limitations under the License.
 
+from collections import namedtuple
+
+SlackOnImsgAction = namedtuple(
+    "SlackOnImsgAction",
+    ['data', 'id', 'value'])
+
 # -------------------------------------------------------------------------
 # The following are the main action items
 # -------------------------------------------------------------------------
