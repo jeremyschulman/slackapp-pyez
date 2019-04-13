@@ -38,6 +38,7 @@ class SlackRequest(object):
             self.user_name = self.rqst_data['user_name']
             self.response_url = self.rqst_data['response_url']
             self.trigger_id = self.rqst_data['trigger_id']
+            self.argv = self.rqst_data['text'].split()
 
         elif self.rqst_type == 'event':
             self.event = self.rqst_data['event']
@@ -85,9 +86,3 @@ class SlackRequest(object):
 
     def response(self):
         return SlackResponse(rqst=self)
-
-
-    def get_user_im_chan(self):
-        self.app.client.api_call(
-            "chat.postEphemeral", user=self.rqst.user_id,
-            channel=self.rqst.channel, **self, **kwargs)

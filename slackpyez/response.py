@@ -14,20 +14,23 @@
 
 import json
 from requests import Session
-from . import ux_blocks
+from collections import UserDict
+
+from slackpyez.exc import SlackAppApiError
+from slackpyez import ux_blocks
 
 
 __all__ = ['SlackResponse']
 
 
-class SlackResponse(dict):
+class SlackResponse(UserDict):
 
     def __init__(self, rqst):
         super(SlackResponse, self).__init__()
         self.app = rqst.app
         self.rqst = rqst
         self.client = rqst.client
-        self['as_user'] = self.rqst.bot
+
         self.request = Session()
         self.request.headers["Content-Type"] = "application/json"
         self.request.verify = False
@@ -36,80 +39,114 @@ class SlackResponse(dict):
     # messaging methods
     # -------------------------------------------------------------------------
 
-    def send_dm(self, channel=None, **kwargs):
-        resp = self.client.api_call("chat.postMessage",
-                                    channel=channel,
-                                    **self, **kwargs)
+    def wrap_text(self, text):
+        blocks = self.get('blocks') or []
+        blocks.insert(0, ux_blocks.section(text))
+        self['blocks'] = blocks
 
-        self.validate_api_response(resp)
+    def send_public(self, text=None, **kwargs):
+        """
+        Send the response to the channel so that all Users will see this
+        message.
 
-    def send_public(self, **kwargs):
+        Other Parameters
+        ----------------
+        Any additional message body parameters not already set in the response
+        object.
+
+        Raises
+        ------
+        SlackAppApiError
+            Upon failure sending message to Slack API
+        """
+        if text:
+            self.wrap_text(text)
+
         resp = self.client.api_call("chat.postMessage",
                                     channel=self.rqst.channel,
                                     **self, **kwargs)
 
         self.validate_api_response(resp)
 
-    def send_ephemeral(self, **kwargs):
+    def send_ephemeral(self, text=None, user_id=None, **kwargs):
+        """
+        Send an ephemeral message to the User in the channel that received the
+        request.
+
+        Alternatively the caller can send the ephMsg to a different user if the
+        `user_id` is provided.
+
+        Parameters
+        ----------
+        user_id : str (optional) - The user to receive the ephMsg
+
+        Other Parameters
+        ----------------
+        Any additional message body parameters not already set in the response
+        object.
+
+        Raises
+        ------
+        SlackAppApiError
+            Upon failure sending message to Slack API
+        """
+        if text:
+            self.wrap_text(text)
+
         api_resp = self.client.api_call("chat.postEphemeral",
-                                        user=self.rqst.user_id,
+                                        user=(user_id or self.rqst.user_id),
                                         channel=self.rqst.channel,
                                         **self, **kwargs)
 
         self.validate_api_response(api_resp)
 
-    def send(self, *vargs, **kwargs):
+    def send(self, text=None, **kwargs):
         """
-        Send the message to the response_url.  The caller is expected to setup the
-        response dictionary items before calling.
+        Send the message to the response_url, which will replace the originating
+        message.
 
-        As a 'shortcut feature', if the caller passes a text string as vargs[0],
-        then this function will wrap that text in a section block and auto-creates
-        the 'blocks' body.  If you use this, do *not* have blocks defined in your
-        response message as it will cause a conflict, and you will get a code
-        Exception.
+        As a 'shortcut feature', if the caller passes `text` parameter then this
+        function will wrap that text in a section block and auto-creates the
+        'blocks' body.
+
+        Notes
+        -----
+        API: https://api.slack.com/interactive-messages
 
         Parameters
         ----------
-        vargs : list[<str>][0]
-            As described above
+        text : str (optional) - as described above
 
-        kwargs
-            Any additional message body fields to send that are not already
-            part of the response dict.
+        Other Parameters
+        ----------------
+        Any additional message body parameters not already set in the response
+        object.
 
         Raises
         ------
-        RuntimeError
-            If the call to the Slack API fails.
+        SlackAppApiError
+            Upon failure sending message to Slack API
         """
-        if vargs:
-            self['blocks'] = [ux_blocks.section(vargs[0])]
+        if text:
+            self.wrap_text(text)
 
         resp = self.request.post(self.rqst.response_url,
                                  json=dict(**self, **kwargs))
         if not resp.ok:
             raise RuntimeError(f"Unable to send response: {resp.text}", resp)
 
-    # -------------------------------------------------------------------------
-    # "on" registers
-    # -------------------------------------------------------------------------
-    # TODO: v---- depreciate this use
+    def send_dm(self, channel, **kwargs):
+        resp = self.client.api_call("chat.postMessage",
+                                    channel=channel,
+                                    **self, **kwargs)
 
-    def on_action(self, key, func):
-        self.app.register_block_action(key, func)
+        self.validate_api_response(resp)
 
     @staticmethod
     def validate_api_response(api_resp):
         if api_resp.get("ok"):
             return
 
-        print("API failed, messages: ")
-        meta = api_resp.get("response_metadata") or {}
-        meta_msgs = meta.get("messages")
-        if meta_msgs:
-            for message in meta_msgs:
-                print(f">: {message}")
-
-        raise RuntimeError(f"Slack API failed.\n{json.dumps(api_resp, indent=3)}\n",
-                           api_resp)
+        raise SlackAppApiError(
+            "Slack API response >>\n{}\n".format(json.dumps(api_resp, indent=3)),
+            api_resp)
