@@ -14,3 +14,4 @@
 
 from . import ux_imsg as IMSG
 from . import ux_blocks as BLOCKS
+from . import ux_dialog as DIALOG
