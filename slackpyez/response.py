@@ -29,7 +29,6 @@ class SlackResponse(UserDict):
         self.app = rqst.app
         self.rqst = rqst
         self.client = rqst.client
-
         self.request = Session()
         self.request.headers["Content-Type"] = "application/json"
         self.request.verify = False

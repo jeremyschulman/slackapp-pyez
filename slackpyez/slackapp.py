@@ -142,7 +142,12 @@ class SlackApp(object):
         event = rqst.payload['callback_id']
         action_data = rqst.payload['actions'][0]
         action_id, action_value = ui.IMSG.v_action(action_data)
-        callback = self.ux_imsg.listeners(event)[0]
+        try:
+            callback = self.ux_imsg.listeners(event)[0]
+        except IndexError:
+            msg = f"No handler for IMSG action event: {event}"
+            self.log.error(msg)
+            return
 
         action = ui.IMSG.SlackOnImsgAction(action_data, action_id, action_value)
         return callback(rqst, action)
