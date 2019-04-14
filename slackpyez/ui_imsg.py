@@ -126,10 +126,52 @@ def button(text, name=None, value=None, style='default'):
 
 
 def i_option(text, value):
+
+    """
+    Create an Interactive Message attachment Menu Select option
+    used when creating a list of options for `func`:select `options`.
+
+    Notes
+    -----
+    API: https://api.slack.com/docs/message-menus
+
+    Parameters
+    ----------
+    text : str
+        The item text the User sees.
+
+    value: str
+        The value presented to the API upon selection.
+
+    Returns
+    -------
+    dict
+    """
     return dict(text=text, value=value)
 
 
 def i_option_group(group, options):
+    """
+    Create an Interactive Message attachment Menu Select option-group
+    used by  `func`:select `option_groups`.
+
+    Notes
+    -----
+    API: https://api.slack.com/docs/message-menus
+
+    Parameters
+    ----------
+    group : str
+        The group name the User sess.
+
+    options : list[tuple]
+        The list of options arranged by (what the user sess, the value presented
+        back to the API)
+
+    Returns
+    -------
+    dict
+    """
     return dict(text=group, options=[
         i_option(o_t, o_v)
         for o_t, o_v in options
