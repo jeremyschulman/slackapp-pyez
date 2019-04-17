@@ -13,10 +13,8 @@
 #  limitations under the License.
 
 from collections import UserDict
-
-
-from slackpyez import ui_dialog
 from slackpyez.slackapi import SlackApiResponse
+import slackpyez.ui_dialog as ui
 
 
 class SlackDialog(UserDict):
@@ -26,23 +24,58 @@ class SlackDialog(UserDict):
         self.rqst = rqst
         self.app = rqst.app
         self.client = rqst.client
-
         self.trigger_id = rqst.trigger_id
-        self.UI = ui_dialog
-        self.callback_id = None
 
-    def on(self, callback_id, func):
-        self.callback_id = callback_id
-        self.app.ux_dialog.on(callback_id, func)
+    @property
+    def ui(self):
+        """ convenience to the module containing the UI widgets """
+        return ui
+
+    @property
+    def event(self):
+        """ get/set the callback_id within the dialog body """
+        return self.get('callback_id')
+
+    @event.setter
+    def event(self, callback_id):
+        self['callback_id'] = callback_id
+
+    def on(self, event):
+        """
+        Convenience decorator that will assign the event into the dialog
+        and the return the slack app 'ui_dialog' event emitter.on for
+        the purpose of callback registration.
+
+        Examples
+        --------
+            @dialog.on('my event')
+            def sumitted(rqst_from_dialog, submission):
+                ... code that handles the data in submission ...
+
+                new_resp = rqst_from_dialog.response()
+                ... setup new response to User
+
+                new_response.send().raise_for_status()
+
+        Parameters
+        ----------
+        event : str
+            The event value that will be registered for dialog_submission
+            callback_id.
+
+        Returns
+        -------
+        callable - decorator of slack app
+        """
+        self.event = event
+        return self.app.ui_dialog.on(event)
 
     def send(self, **kwargs):
-        # self['state'] = json.dumps(self['state'])
-
-        if not self.callback_id:
-            raise RuntimeError("Missing required callback_id")
+        if not self.event:
+            raise RuntimeError("Missing required event callback_id")
 
         return SlackApiResponse(self.rqst, self.client.api_call(
             "dialog.open",
             trigger_id=self.trigger_id,
-            dialog=dict(callback_id=self.callback_id, **self, **kwargs)
+            dialog=dict(**self, **kwargs)
         ))
