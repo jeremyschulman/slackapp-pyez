@@ -76,9 +76,9 @@ class SlackApp(object):
     def __init__(self):
         self.log = create_logger()
 
-        self.ux_block = pyee.EventEmitter()
-        self.ux_dialog = pyee.EventEmitter()
-        self.ux_imsg = pyee.EventEmitter()
+        self.ui_block = pyee.EventEmitter()
+        self.ui_dialog = pyee.EventEmitter()
+        self.ui_imsg = pyee.EventEmitter()
 
         self._in_msg = pyee.EventEmitter()
 
@@ -127,14 +127,14 @@ class SlackApp(object):
         action = rqst.payload['actions'][0]
         value = ui.BLOCKS.v_action(action)
         event = action['block_id']
-        callback = self.ux_block.listeners(event)[0]
+        callback = self.ui_block.listeners(event)[0]
 
         return callback(rqst, action, value)
 
     def _handle_dialog_submit(self, rqst):
         event = rqst.payload['callback_id']
         submission = rqst.payload['submission']
-        callback = self.ux_dialog.listeners(event)[0]
+        callback = self.ui_dialog.listeners(event)[0]
 
         return callback(rqst, submission)
 
@@ -143,7 +143,7 @@ class SlackApp(object):
         action_data = rqst.payload['actions'][0]
         action_id, action_value = ui.IMSG.v_action(action_data)
         try:
-            callback = self.ux_imsg.listeners(event)[0]
+            callback = self.ui_imsg.listeners(event)[0]
         except IndexError:
             msg = f"No handler for IMSG action event: {event}"
             self.log.error(msg)
@@ -153,8 +153,8 @@ class SlackApp(object):
         return callback(rqst, action)
 
     def error(self, exc):
+        emsg = str(exc)
         if exc.args:
-            self.log.error("SlackApp ERROR>>\n{}\n".format(
-                json.dumps(exc.args[1])))
+            self.log.error("SlackApp ERROR>>\n{}\n".format(emsg))
 
         raise exc

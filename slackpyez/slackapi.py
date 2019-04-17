@@ -16,9 +16,17 @@ from . import exc
 
 
 class SlackApiResponse(object):
+    """
+    This class is used to contain the response from the SlackAPI. The response
+    is from the SlackClient api_call method.  The `resp` will be a dict.
+    """
     def __init__(self, rqst, resp):
         self.rqst = rqst
         self.app = rqst.app
+
+        # The resp is from the SlackClient API.  The contents will be a JSON
+        # payload/dict
+
         self.resp = resp
 
     @property
@@ -33,6 +41,11 @@ class SlackApiResponse(object):
 
 
 class SlackApiPostResponse(SlackApiResponse):
+    """
+    This wrapper class is used when the caller is using "requests" to access the
+    Slack API, vs. using the SlackClient.  The `resp` will be a requests.Response
+    object.
+    """
     @property
     def ok(self):
         return self.resp.ok
