@@ -15,38 +15,42 @@
 from flask import request
 
 from blueprint import blueprint
-from slackapp import slackapp
+from app_data import slackapp
+from slackpyez.ui import BLOCKS
 
 
 @blueprint.route("/ngrok", methods=["POST"])
 def slackcmd_verify_ngrok():
-
     rqst = slackapp.request(request.form)
     resp = rqst.response()
 
+    block_id = 'ngrok.button'
+
     resp['blocks'] = [
-        resp.b_section('Hi There!'),
-        resp.b_section(f'You are <@{rqst.user_id}>'),
-        resp.b_divider(),
-        resp.b_actions(block_id='ngrok', elements=[
-            resp.e_button('Good'),
-            resp.e_button('Bad')
-        ]),
-        resp.b_divider()
+        BLOCKS.section('Hi There!'),
+        BLOCKS.section(f'You are <@{rqst.user_id}>'),
+        BLOCKS.divider(),
+        BLOCKS.actions(
+            block_id=block_id,
+            elements=[
+                BLOCKS.e_button('Press for Good',
+                                action_id=f'{block_id}.good',
+                                value='good'),
+                BLOCKS.e_button('Press for Bad',
+                                action_id=f'{block_id}.bad',
+                                value='bad')
+            ]
+        ),
+        BLOCKS.divider()
     ]
 
-    resp.send(_on_actions=[(('ngrok', 'Good'), _on_button),
-                           (('ngrok', 'Bad'), _on_button)])
+    @slackapp.ui_block.on(block_id)
+    def _on_button(rqst, action, value):
+        """ this function will be called when the User clicks on the of buttons defined """
+        resp = rqst.response()
+        resp.send(f"at time {action['action_ts']}, you pressed: {value}")
+        return ''
 
-    return ""
-
-
-def _on_button(action, rqst, **_kwargs):
-    action_id = action['action_id']
-    resp = rqst.response()
-    resp.send(f'You pressed >>{action_id}<<')
-
-    # delete the original request since this was a button action.
-
-    return rqst.delete()
+    resp.send().raise_for_status()
+    return ''
 

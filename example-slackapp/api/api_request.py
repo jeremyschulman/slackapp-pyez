@@ -14,12 +14,10 @@
 
 from flask import request
 from blueprint import blueprint
-from slackpyez.slackapp import SlackApp
-
-slackapp = SlackApp()
+from app_data import slackapp
 
 
-@blueprint.route('/slackbot/request', methods=["POST"])
+@blueprint.route('/slack/request', methods=["POST"])
 def on_slack_request():
     return slackapp.handle_request(request.form)
 
