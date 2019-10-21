@@ -13,12 +13,13 @@ as described in this [article](https://api.slack.com/tutorials/tunneling-with-ng
 Once you've created you API there, you will need to create a file called
 `slackapp.toml` that contains the various tokens needed to exchange data
 between your app and the Slack API system.  See the file
-[slackapp-template.toml] for further details.  You then must edit the file
-`setup-env.sh` to setup the SLACKAPI_SETTINGS variable to point to the file on
-your local system.  Generally speaking, you should *NOT* store the
-slackapp.toml file in your repository if you plan to checkin your code; so you
-will see that the SLACKAPI_SETTINGS variable points to a file outside the
-current project directory structure.
+[slackapp-template.toml](slackapp-template.toml) for further details.  You then
+must edit the file [setup-env.sh](setup-env.sh) to change the
+`SLACKAPI_SETTINGS` variable to point to the file on your local system. 
+Generally speaking, you should *NOT* store the slackapp.toml file in your
+repository if you plan to checkin your code; so you will see that the
+`SLACKAPI_SETTINGS` variable points to a file outside the current project
+directory structure.
 
 If you want to change the Flask app port used for this demonstration, you can
 edit the file [flaskapp-env.sh](flaskapp-env.sh) and change the `PORT` value.
