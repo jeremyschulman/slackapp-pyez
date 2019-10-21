@@ -1,4 +1,4 @@
 pyee
-slackclient
+slackclient<2.0
 requests
 toml
