@@ -21,8 +21,17 @@ repository if you plan to checkin your code; so you will see that the
 `SLACKAPI_SETTINGS` variable points to a file outside the current project
 directory structure.
 
+You must then source the `setup-env.sh` file to load the variables into your
+environment:
+
+```shell script
+$ source setup-env.sh
+```
+
 If you want to change the Flask app port used for this demonstration, you can
-edit the file [flaskapp-env.sh](flaskapp-env.sh) and change the `PORT` value.
+edit the file [flaskapp-env.sh](flaskapp-env.sh) and change the `PORT` value. 
+You do not need to source this file as it is automatically loaded by the
+slackpyez framework.
 
 # Running the example
 
