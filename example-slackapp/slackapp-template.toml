@@ -1,0 +1,41 @@
+# This file controls the Slack-PyEZ system to enable the commands within a
+# specific channel. You will need to put your specific values in each of the
+# variable placeholders, marked as <YOUR: name-of-value>
+
+# The channel ID value that is need for command processing can be obtained via
+# https://api.slack.com/methods/conversations.list/test using the type field
+# set to "private_channel"
+
+# Technically speaking slack-pyez can support multiple different channels,
+# allowing for more advanced "RBAC" like controls.  But these are not
+# demonstrated in the example.
+
+[[channel]]
+
+    name = "<YOUR-channel-name-here>"
+    id = "<YOUR-channel-ID-value-here>"
+
+    # from Settings | Basic Information page | App Credentials section
+    client_id = "<YOUR: Client ID>"
+    client_secret = "<YOUR: Client Secret>"
+    signing_secret = "<YOUR: Signing Secret>"
+    verify_token = "<YOUR: Verification Token>"
+
+    # from Features | OAuth and Permissions page
+    oauth_token = "<YOUR: OAuth Access Token>"
+    bot_oauth_token = "<YOUR: Bot User OAuth Access Token>"
+
+    # from Features | Bot Users page
+    bot_user_name = "<YOUR: Default username>"
+
+    # from Features | Incoming Webhooks page
+    webhook_token = "<YOUR: Webhook URL, token is everything after 'https://hooks.slack.com/services/'>"
+
+
+# The sections section is used to define where the session database is stored.
+# You can leave this as it is, and if you're curious you can look at the
+# contents of the file.  This has nothing to do with the Slack API
+# specifically.
+
+[sessions]
+    path = 'sessions.db'
