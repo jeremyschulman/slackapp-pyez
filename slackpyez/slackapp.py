@@ -25,7 +25,7 @@ from slackclient import SlackClient
 from slackpyez.request import SlackRequest
 from slackpyez.log import create_logger
 from slackpyez.sessions import SlackAppSessionInterface
-from slackpyez import ui, exc
+from slackpyez import ui
 
 
 __all__ = ['SlackApp', 'SlackAppConfig']
@@ -37,22 +37,10 @@ class SlackAppConfig(UserDict):
         super(SlackAppConfig, self).__init__()
         self.channels = None
 
-    def from_envar(self, envar):
-        conf_file = os.environ.get(envar)
-        if not conf_file:
-            raise RuntimeError(f'The environment variable {envar} is not set '
-                               'and as such configuration could not be '
-                               'loaded.  Set this variable and make it '
-                               'point to a configuration file')
-
-        conf_file_p = Path(conf_file)
-        if not conf_file_p.exists():
-            raise RuntimeError(f'The environment variable {envar} is set to '
-                               f'{conf_file}, but this file does not exist')
-
+    def from_obj(self, obj):
         # store the config file data into the object as dict
 
-        self.update(toml.load(conf_file_p))
+        self.update(obj)
 
         # create a specific `channels` attribute that is a dict of channel ID to
         # channel config.
@@ -69,6 +57,23 @@ class SlackAppConfig(UserDict):
             _chan['name']: _chan['id']
             for _chan in self['channel']
         }
+
+    def from_envar(self, envar):
+        conf_file = os.environ.get(envar)
+        if not conf_file:
+            raise RuntimeError(f'The environment variable {envar} is not set '
+                               'and as such configuration could not be '
+                               'loaded.  Set this variable and make it '
+                               'point to a configuration file')
+
+        conf_file_p = Path(conf_file)
+        if not conf_file_p.exists():
+            raise RuntimeError(f'The environment variable {envar} is set to '
+                               f'{conf_file}, but this file does not exist')
+
+        # import the configuration from the contents of the TOML file.
+
+        self.from_obj(toml.load(conf_file_p))
 
 
 class SlackApp(object):
